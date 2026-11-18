@@ -33,9 +33,9 @@ use stdClass;
  */
 class progress_manager {
     /** @var float Seconds of credit a brand-new progress record starts with (covers the first heartbeat). */
-    const CREDIT_START = 6.0;
+    public const CREDIT_START = 6.0;
     /** @var float Most credit that can build up while idle (one heartbeat after a long pause). */
-    const CREDIT_MAX = 65.0;
+    public const CREDIT_MAX = 65.0;
 
     /**
      * Method get_videos.
@@ -45,8 +45,11 @@ class progress_manager {
      */
     public function get_videos(int $playlistid): array {
         global $DB;
-        return array_values($DB->get_records('lecturevideos_videos',
-            ['playlistid' => $playlistid, 'enabled' => 1], 'sortorder ASC, id ASC'));
+        return array_values($DB->get_records(
+            'lecturevideos_videos',
+            ['playlistid' => $playlistid, 'enabled' => 1],
+            'sortorder ASC, id ASC'
+        ));
     }
 
     /**
@@ -162,8 +165,11 @@ class progress_manager {
         ]);
         if (!$session) {
             // Housekeeping: drop this student's finished sessions for this video.
-            $DB->delete_records_select('lecturevideos_sessions', 'videoid = ? AND userid = ? AND lastheartbeat < ?',
-                [$video->id, $userid, $now - DAYSECS]);
+            $DB->delete_records_select(
+                'lecturevideos_sessions',
+                'videoid = ? AND userid = ? AND lastheartbeat < ?',
+                [$video->id, $userid, $now - DAYSECS]
+            );
             $session = (object)[
                 'playlistid' => $playlist->id, 'videoid' => $video->id, 'userid' => $userid,
                 'sessionkey' => $params['sessionkey'], 'sequence' => 0,
@@ -193,8 +199,10 @@ class progress_manager {
         $beforepercent = (float)$progress->percent;
         // Credit allowance: refills with real time (at the playback rate) and is spent by every credited second,
         // so sending many requests (or new session keys) cannot claim more than was really played.
-        $balance = min(self::CREDIT_MAX,
-            (float)$progress->creditbalance + max(0, $now - (int)$progress->timemodified) * $rate);
+        $balance = min(
+            self::CREDIT_MAX,
+            (float)$progress->creditbalance + max(0, $now - (int)$progress->timemodified) * $rate
+        );
         $end = min($end, $start + $balance);
         $stored = json_decode((string)$progress->watchedsegments, true);
         if (!is_array($stored)) {

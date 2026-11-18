@@ -45,15 +45,29 @@ class video_form extends \moodleform {
         $mform->addElement('text', 'title', get_string('videotitle', 'lecturevideos'), ['size' => 60]);
         $mform->setType('title', PARAM_TEXT);
         $mform->addRule('title', null, 'required', null, 'client');
-        $mform->addElement('textarea', 'description', get_string('videodescription', 'lecturevideos'),
-            ['rows' => 3, 'cols' => 60]);
+        $mform->addElement(
+            'textarea',
+            'description',
+            get_string('videodescription', 'lecturevideos'),
+            ['rows' => 3, 'cols' => 60]
+        );
         $mform->setType('description', PARAM_TEXT);
-        $mform->addElement('filemanager', 'videofile', get_string('videofile', 'lecturevideos'), null,
-            ['subdirs' => 0, 'maxfiles' => 1, 'accepted_types' => ['.mp4', '.m4v', '.mov', '.webm']]);
+        $mform->addElement(
+            'filemanager',
+            'videofile',
+            get_string('videofile', 'lecturevideos'),
+            null,
+            ['subdirs' => 0, 'maxfiles' => 1, 'accepted_types' => ['.mp4', '.m4v', '.mov', '.webm']]
+        );
         $mform->addRule('videofile', null, 'required', null, 'client');
         $mform->addHelpButton('videofile', 'videofile', 'lecturevideos');
-        $mform->addElement('filemanager', 'posterfile', get_string('posterfile', 'lecturevideos'), null,
-            ['subdirs' => 0, 'maxfiles' => 1, 'accepted_types' => \mod_lecturevideos\local\videos::POSTER_TYPES]);
+        $mform->addElement(
+            'filemanager',
+            'posterfile',
+            get_string('posterfile', 'lecturevideos'),
+            null,
+            ['subdirs' => 0, 'maxfiles' => 1, 'accepted_types' => \mod_lecturevideos\local\videos::POSTER_TYPES]
+        );
         $mform->addHelpButton('posterfile', 'posterfile', 'lecturevideos');
         $mform->addElement('text', 'minpercent', get_string('minpercent', 'lecturevideos'), ['size' => 5]);
         $mform->setType('minpercent', PARAM_INT);

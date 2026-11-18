@@ -43,11 +43,17 @@ if ($action === 'delete' && $videoid && confirm_sesskey()) {
         redirect(new moodle_url('/mod/lecturevideos/manage.php', ['id' => $cm->id]), get_string('videodeleted', 'lecturevideos'));
     }
     echo $OUTPUT->header();
-    echo $OUTPUT->confirm(get_string('confirmdeletevideo', 'lecturevideos', format_string($video->title)),
-        new moodle_url('/mod/lecturevideos/manage.php',
-            ['id' => $cm->id, 'action' => 'delete', 'videoid' => $video->id, 'confirm' => 1, 'sesskey' => sesskey()]),
-        new moodle_url('/mod/lecturevideos/manage.php',
-            ['id' => $cm->id]));
+    echo $OUTPUT->confirm(
+        get_string('confirmdeletevideo', 'lecturevideos', format_string($video->title)),
+        new moodle_url(
+            '/mod/lecturevideos/manage.php',
+            ['id' => $cm->id, 'action' => 'delete', 'videoid' => $video->id, 'confirm' => 1, 'sesskey' => sesskey()]
+        ),
+        new moodle_url(
+            '/mod/lecturevideos/manage.php',
+            ['id' => $cm->id]
+        )
+    );
     echo $OUTPUT->footer();
     exit;
 }
@@ -84,14 +90,22 @@ foreach ($videos as $video) {
         'title' => format_string($video->title),
         'duration' => \mod_lecturevideos\local\videos::format_duration((float)$video->duration),
         'minpercent' => $video->minpercent, 'enabled' => $video->enabled,
-        'editurl' => (new moodle_url('/mod/lecturevideos/video.php',
-            ['id' => $cm->id, 'videoid' => $video->id]))->out(false),
-        'upurl' => (new moodle_url('/mod/lecturevideos/manage.php',
-            ['id' => $cm->id, 'action' => 'up', 'videoid' => $video->id, 'sesskey' => sesskey()]))->out(false),
-        'downurl' => (new moodle_url('/mod/lecturevideos/manage.php',
-            ['id' => $cm->id, 'action' => 'down', 'videoid' => $video->id, 'sesskey' => sesskey()]))->out(false),
-        'deleteurl' => (new moodle_url('/mod/lecturevideos/manage.php',
-            ['id' => $cm->id, 'action' => 'delete', 'videoid' => $video->id, 'sesskey' => sesskey()]))->out(false),
+        'editurl' => (new moodle_url(
+            '/mod/lecturevideos/video.php',
+            ['id' => $cm->id, 'videoid' => $video->id]
+        ))->out(false),
+        'upurl' => (new moodle_url(
+            '/mod/lecturevideos/manage.php',
+            ['id' => $cm->id, 'action' => 'up', 'videoid' => $video->id, 'sesskey' => sesskey()]
+        ))->out(false),
+        'downurl' => (new moodle_url(
+            '/mod/lecturevideos/manage.php',
+            ['id' => $cm->id, 'action' => 'down', 'videoid' => $video->id, 'sesskey' => sesskey()]
+        ))->out(false),
+        'deleteurl' => (new moodle_url(
+            '/mod/lecturevideos/manage.php',
+            ['id' => $cm->id, 'action' => 'delete', 'videoid' => $video->id, 'sesskey' => sesskey()]
+        ))->out(false),
     ];
 }
 echo $OUTPUT->header();

@@ -31,8 +31,12 @@ $playlist = $DB->get_record('lecturevideos', ['id' => $cm->instance], '*', MUST_
 require_course_login($course, true, $cm);
 $context = context_module::instance($cm->id);
 require_capability('mod/lecturevideos:managevideos', $context);
-$video = $videoid ? $DB->get_record('lecturevideos_videos',
-    ['id' => $videoid, 'playlistid' => $playlist->id], '*', MUST_EXIST) : null;
+$video = $videoid ? $DB->get_record(
+    'lecturevideos_videos',
+    ['id' => $videoid, 'playlistid' => $playlist->id],
+    '*',
+    MUST_EXIST
+) : null;
 $PAGE->set_url('/mod/lecturevideos/video.php', ['id' => $cm->id, 'videoid' => $videoid]);
 $PAGE->set_title($video ? get_string('editvideo', 'lecturevideos') : get_string('addvideo', 'lecturevideos'));
 $PAGE->set_heading(format_string($course->fullname));
@@ -63,8 +67,12 @@ if ($data = $form->get_data()) {
         $video->timemodified = time();
         $DB->update_record('lecturevideos_videos', $video);
     } else {
-        $video = \mod_lecturevideos\local\videos::add($playlist->id, $data->title, (int)$data->minpercent,
-            (string)$data->description);
+        $video = \mod_lecturevideos\local\videos::add(
+            $playlist->id,
+            $data->title,
+            (int)$data->minpercent,
+            (string)$data->description
+        );
         $DB->set_field('lecturevideos_videos', 'enabled', $data->enabled, ['id' => $video->id]);
     }
     file_save_draft_area_files($data->videofile, $context->id, 'mod_lecturevideos', 'video', $video->id, $fileopts);

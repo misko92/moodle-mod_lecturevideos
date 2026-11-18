@@ -29,7 +29,7 @@ use stdClass;
  */
 class videos {
     /** @var string[] Accepted poster image extensions. */
-    const POSTER_TYPES = ['.jpg', '.jpeg', '.png', '.webp'];
+    public const POSTER_TYPES = ['.jpg', '.jpeg', '.png', '.webp'];
 
     /**
      * Add a video record at the end of the playlist.
@@ -42,8 +42,10 @@ class videos {
      */
     public static function add(int $playlistid, string $title, int $minpercent = 90, string $description = ''): stdClass {
         global $DB;
-        $max = $DB->get_field_sql('SELECT COALESCE(MAX(sortorder), -1) FROM {lecturevideos_videos} WHERE playlistid = ?',
-            [$playlistid]);
+        $max = $DB->get_field_sql(
+            'SELECT COALESCE(MAX(sortorder), -1) FROM {lecturevideos_videos} WHERE playlistid = ?',
+            [$playlistid]
+        );
         $now = time();
         $video = (object)['playlistid' => $playlistid, 'title' => $title, 'description' => $description,
             'source' => 'upload', 'sourceurl' => '', 'minpercent' => $minpercent, 'duration' => 0,
@@ -109,8 +111,14 @@ class videos {
         if (!$file) {
             return '';
         }
-        return moodle_url::make_pluginfile_url($context->id, 'mod_lecturevideos', $area, $videoid,
-            $file->get_filepath(), $file->get_filename())->out(false);
+        return moodle_url::make_pluginfile_url(
+            $context->id,
+            'mod_lecturevideos',
+            $area,
+            $videoid,
+            $file->get_filepath(),
+            $file->get_filename()
+        )->out(false);
     }
 
     /**

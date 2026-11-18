@@ -33,20 +33,29 @@ class backup_lecturevideos_activity_structure_step extends backup_activity_struc
      */
     protected function define_structure() {
         $userinfo = $this->get_setting_value('userinfo');
-        $activity = new backup_nested_element('lecturevideos', ['id'],
+        $activity = new backup_nested_element(
+            'lecturevideos',
+            ['id'],
             [
                 'name', 'intro', 'introformat', 'sequential', 'allowseek', 'resumeplayback',
                 'completionpercent', 'completionmode', 'grade', 'timecreated', 'timemodified',
-            ]);
+            ]
+        );
         $videos = new backup_nested_element('videos');
-        $video = new backup_nested_element('video', ['id'],
-            ['title', 'description', 'minpercent', 'duration', 'sortorder', 'enabled', 'timecreated', 'timemodified']);
+        $video = new backup_nested_element(
+            'video',
+            ['id'],
+            ['title', 'description', 'minpercent', 'duration', 'sortorder', 'enabled', 'timecreated', 'timemodified']
+        );
         $progresses = new backup_nested_element('progresses');
-        $progress = new backup_nested_element('progress', ['id'],
+        $progress = new backup_nested_element(
+            'progress',
+            ['id'],
             [
                 'videoid', 'userid', 'duration', 'lastposition', 'uniquewatched', 'totalwatchtime',
                 'percent', 'watchedsegments', 'completed', 'timecreated', 'timemodified',
-            ]);
+            ]
+        );
         $activity->add_child($videos);
         $videos->add_child($video);
         $activity->add_child($progresses);

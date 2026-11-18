@@ -37,7 +37,7 @@ use core_privacy\local\request\writer;
 /**
  * Class provider.
  */
-class provider implements metadata_provider, plugin_provider, core_userlist_provider {
+class provider implements core_userlist_provider, metadata_provider, plugin_provider {
     /**
      * Method get_metadata.
      *
@@ -91,12 +91,15 @@ class provider implements metadata_provider, plugin_provider, core_userlist_prov
             if (!$cm) {
                 continue;
             }
-            $records = $DB->get_records('lecturevideos_progress',
-                ['playlistid' => $cm->instance, 'userid' => $contextlist->get_user()->id]);
+            $records = $DB->get_records(
+                'lecturevideos_progress',
+                ['playlistid' => $cm->instance, 'userid' => $contextlist->get_user()->id]
+            );
             if ($records) {
                 writer::with_context($context)->export_data(
                     [get_string('pluginname', 'lecturevideos')],
-                    (object)['progress' => array_values($records)]);
+                    (object)['progress' => array_values($records)]
+                );
             }
         }
     }

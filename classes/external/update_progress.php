@@ -69,12 +69,29 @@ class update_progress extends external_api {
      * @param string $sessionkey Parameter sessionkey.
      * @return array Return value.
      */
-    public static function execute(int $cmid, int $videoid, float $currentposition, float $duration,
-                                   float $segmentstart, float $segmentend, float $playbackrate,
-                                   int $sequence, string $sessionkey): array {
+    public static function execute(
+        int $cmid,
+        int $videoid,
+        float $currentposition,
+        float $duration,
+        float $segmentstart,
+        float $segmentend,
+        float $playbackrate,
+        int $sequence,
+        string $sessionkey
+    ): array {
         global $DB, $USER;
-        $params = self::validate_parameters(self::execute_parameters(), compact('cmid', 'videoid', 'currentposition',
-            'duration', 'segmentstart', 'segmentend', 'playbackrate', 'sequence', 'sessionkey'));
+        $params = self::validate_parameters(self::execute_parameters(), compact(
+            'cmid',
+            'videoid',
+            'currentposition',
+            'duration',
+            'segmentstart',
+            'segmentend',
+            'playbackrate',
+            'sequence',
+            'sessionkey'
+        ));
         $cm = get_coursemodule_from_id('lecturevideos', $params['cmid'], 0, false, MUST_EXIST);
         $context = context_module::instance($cm->id);
         self::validate_context($context);
@@ -83,12 +100,18 @@ class update_progress extends external_api {
             throw new \required_capability_exception($context, 'mod/lecturevideos:view', 'nopermissions', '');
         }
         $playlist = $DB->get_record('lecturevideos', ['id' => $cm->instance], '*', MUST_EXIST);
-        $video = $DB->get_record('lecturevideos_videos',
-            ['id' => $params['videoid'], 'playlistid' => $playlist->id, 'enabled' => 1], '*', MUST_EXIST);
-        if ($params['duration'] <= 0 || $params['duration'] > 604800 || $params['currentposition'] < 0 ||
+        $video = $DB->get_record(
+            'lecturevideos_videos',
+            ['id' => $params['videoid'], 'playlistid' => $playlist->id, 'enabled' => 1],
+            '*',
+            MUST_EXIST
+        );
+        if (
+            $params['duration'] <= 0 || $params['duration'] > 604800 || $params['currentposition'] < 0 ||
             $params['segmentstart'] < 0 || $params['segmentend'] < $params['segmentstart'] ||
             $params['playbackrate'] < 0.25 || $params['playbackrate'] > 4 || $params['sequence'] < 1 ||
-            strlen($params['sessionkey']) < 16) {
+            strlen($params['sessionkey']) < 16
+        ) {
             throw new invalid_parameter_exception(get_string('invalidtrackingdata', 'lecturevideos'));
         }
         return (new progress_manager())->update($playlist, $video, $cm, $USER->id, $params);

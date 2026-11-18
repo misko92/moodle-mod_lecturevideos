@@ -52,8 +52,13 @@ foreach ($DB->get_records('lecturevideos_progress', ['playlistid' => $playlist->
 
 $completion = new completion_info($course);
 $trackcompletion = $completion->is_enabled($cm) == COMPLETION_TRACKING_AUTOMATIC;
-$students = get_enrolled_users($context, 'mod/lecturevideos:view', 0,
-    'u.id,' . implode(',', \core_user\fields::get_name_fields(true)), 'u.lastname,u.firstname');
+$students = get_enrolled_users(
+    $context,
+    'mod/lecturevideos:view',
+    0,
+    'u.id,' . implode(',', \core_user\fields::get_name_fields(true)),
+    'u.lastname,u.firstname'
+);
 
 $rows = [];
 $completecount = 0;
@@ -107,8 +112,11 @@ $data = [
     'name' => format_string($playlist->name),
     'students' => $rows, 'hasstudents' => !empty($rows),
     'trackcompletion' => $trackcompletion,
-    'summary' => get_string('reportsummary', 'lecturevideos',
-        ['complete' => $completecount, 'total' => count($rows), 'videos' => count($videos)]),
+    'summary' => get_string(
+        'reportsummary',
+        'lecturevideos',
+        ['complete' => $completecount, 'total' => count($rows), 'videos' => count($videos)]
+    ),
     'backurl' => (new moodle_url('/mod/lecturevideos/view.php', ['id' => $cm->id]))->out(false),
 ];
 echo $OUTPUT->header();

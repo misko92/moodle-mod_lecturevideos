@@ -133,8 +133,10 @@ class mod_lecturevideos_mod_form extends moodleform_mod {
      */
     public function validation($data, $files): array {
         $errors = parent::validation($data, $files);
-        if (isset($data['completionpercent_lecturevideos']) &&
-            ((int)$data['completionpercent_lecturevideos'] < 1 || (int)$data['completionpercent_lecturevideos'] > 100)) {
+        if (
+            isset($data['completionpercent_lecturevideos']) &&
+            ((int)$data['completionpercent_lecturevideos'] < 1 || (int)$data['completionpercent_lecturevideos'] > 100)
+        ) {
             $errors['completionpercent_lecturevideos'] = get_string('errorpercent', 'lecturevideos');
         }
         return $errors;

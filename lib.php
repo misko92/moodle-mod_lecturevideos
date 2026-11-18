@@ -127,8 +127,15 @@ function lecturevideos_delete_instance(int $id): bool {
  * @param array $options Additional file serving options.
  * @return bool False when the requested file cannot be served.
  */
-function mod_lecturevideos_pluginfile($course, $cm, $context, string $filearea, array $args,
-                                      bool $forcedownload, array $options = []): bool {
+function mod_lecturevideos_pluginfile(
+    $course,
+    $cm,
+    $context,
+    string $filearea,
+    array $args,
+    bool $forcedownload,
+    array $options = []
+): bool {
     global $DB, $USER;
     if ($context->contextlevel !== CONTEXT_MODULE || !in_array($filearea, ['video', 'poster'], true)) {
         return false;
@@ -140,8 +147,10 @@ function mod_lecturevideos_pluginfile($course, $cm, $context, string $filearea, 
     if ($filearea === 'video' && !has_capability('mod/lecturevideos:managevideos', $context)) {
         // Students only get enabled videos they have unlocked.
         $playlist = $DB->get_record('lecturevideos', ['id' => $cm->instance], '*', MUST_EXIST);
-        if (empty($video->enabled) ||
-                !(new \mod_lecturevideos\progress_manager())->is_video_unlocked($playlist, $video, $USER->id)) {
+        if (
+            empty($video->enabled) ||
+                !(new \mod_lecturevideos\progress_manager())->is_video_unlocked($playlist, $video, $USER->id)
+        ) {
             return false;
         }
     }
@@ -217,8 +226,12 @@ function lecturevideos_update_grades(stdClass $playlist, int $userid = 0, bool $
     if ($userid) {
         $grades[$userid] = (object)['userid' => $userid, 'rawgrade' => $manager->get_overall_percent($playlist->id, $userid)];
     } else {
-        $userids = $DB->get_fieldset_select('lecturevideos_progress',
-            'DISTINCT userid', 'playlistid = :id', ['id' => $playlist->id]);
+        $userids = $DB->get_fieldset_select(
+            'lecturevideos_progress',
+            'DISTINCT userid',
+            'playlistid = :id',
+            ['id' => $playlist->id]
+        );
         foreach ($userids as $uid) {
             $grades[$uid] = (object)['userid' => $uid, 'rawgrade' => $manager->get_overall_percent($playlist->id, $uid)];
         }
@@ -237,7 +250,11 @@ function lecturevideos_update_grades(stdClass $playlist, int $userid = 0, bool $
  */
 function lecturevideos_get_coursemodule_info(stdClass $cm): cached_cm_info|null {
     global $DB;
-    $playlist = $DB->get_record('lecturevideos', ['id' => $cm->instance], 'id,name,intro,introformat,completionpercent,completionmode');
+    $playlist = $DB->get_record(
+        'lecturevideos',
+        ['id' => $cm->instance],
+        'id, name, intro, introformat, completionpercent, completionmode'
+    );
     if (!$playlist) {
         return null;
     }
@@ -260,8 +277,10 @@ function lecturevideos_get_coursemodule_info(stdClass $cm): cached_cm_info|null 
  * @return array Active completion rule descriptions.
  */
 function lecturevideos_get_completion_active_rule_descriptions(cached_cm_info $cm): array {
-    if ((int)$cm->completion !== COMPLETION_TRACKING_AUTOMATIC ||
-        empty($cm->customdata['customcompletionrules']['completionpercent'])) {
+    if (
+        (int)$cm->completion !== COMPLETION_TRACKING_AUTOMATIC ||
+        empty($cm->customdata['customcompletionrules']['completionpercent'])
+    ) {
         return [];
     }
     $key = empty($cm->customdata['completionmode']) ? 'completiondetail:percent' : 'completiondetail:each';

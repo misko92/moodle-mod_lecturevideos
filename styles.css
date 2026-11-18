@@ -88,11 +88,13 @@
 .mod-lecturevideos .lv-item.active .lv-item-progress .progress-bar {
     background: #fff;
 }
+
 @media (max-width: 575.98px) {
     .mod-lecturevideos .lv-thumb {
         width: 72px;
     }
 }
+
 @media (min-width: 992px) {
     .mod-lecturevideos .lv-layout {
         display: grid;
