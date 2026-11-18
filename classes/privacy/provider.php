@@ -29,12 +29,15 @@ use core_privacy\local\request\approved_contextlist;
 use core_privacy\local\request\contextlist;
 use core_privacy\local\request\plugin\provider as plugin_provider;
 use core_privacy\local\metadata\provider as metadata_provider;
+use core_privacy\local\request\approved_userlist;
+use core_privacy\local\request\core_userlist_provider;
+use core_privacy\local\request\userlist;
 use core_privacy\local\request\writer;
 
 /**
  * Class provider.
  */
-class provider implements metadata_provider, plugin_provider {
+class provider implements metadata_provider, plugin_provider, core_userlist_provider {
     /**
      * Method get_metadata.
      *
@@ -134,5 +137,51 @@ class provider implements metadata_provider, plugin_provider {
             $DB->delete_records('lecturevideos_sessions', $params);
             $DB->delete_records('lecturevideos_progress', $params);
         }
+    }
+
+    /**
+     * Users who have progress in this activity.
+     *
+     * @param userlist $userlist
+     */
+    public static function get_users_in_context(userlist $userlist): void {
+        $context = $userlist->get_context();
+        if (!$context instanceof \context_module) {
+            return;
+        }
+        $sql = "SELECT p.userid
+                  FROM {course_modules} cm
+                  JOIN {modules} m ON m.id = cm.module AND m.name = :modname
+                  JOIN {lecturevideos_progress} p ON p.playlistid = cm.instance
+                 WHERE cm.id = :cmid
+                 UNION
+                SELECT s.userid
+                  FROM {course_modules} cm
+                  JOIN {modules} m ON m.id = cm.module AND m.name = :modname2
+                  JOIN {lecturevideos_sessions} s ON s.playlistid = cm.instance
+                 WHERE cm.id = :cmid2";
+        $userlist->add_from_sql('userid', $sql, ['modname' => 'lecturevideos', 'cmid' => $context->instanceid,
+            'modname2' => 'lecturevideos', 'cmid2' => $context->instanceid]);
+    }
+
+    /**
+     * Delete progress and sessions for several users in one activity.
+     *
+     * @param approved_userlist $userlist
+     */
+    public static function delete_data_for_users(approved_userlist $userlist): void {
+        global $DB;
+        $context = $userlist->get_context();
+        if (!$context instanceof \context_module || !$userlist->get_userids()) {
+            return;
+        }
+        $cm = get_coursemodule_from_id('lecturevideos', $context->instanceid, 0, false, IGNORE_MISSING);
+        if (!$cm) {
+            return;
+        }
+        [$insql, $params] = $DB->get_in_or_equal($userlist->get_userids(), SQL_PARAMS_NAMED);
+        $params['playlistid'] = $cm->instance;
+        $DB->delete_records_select('lecturevideos_sessions', "playlistid = :playlistid AND userid $insql", $params);
+        $DB->delete_records_select('lecturevideos_progress', "playlistid = :playlistid AND userid $insql", $params);
     }
 }

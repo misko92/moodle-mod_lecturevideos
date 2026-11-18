@@ -171,10 +171,10 @@ function lecturevideos_get_file_areas($course, $cm, $context): array {
  * Creates or updates the grade item for a lecture videos.
  *
  * @param stdClass $playlist The playlist record.
- * @param array|null $grades Optional grades to update.
+ * @param array|string|null $grades Optional grades to update, or 'reset' to clear all grades.
  * @return int Grade update status.
  */
-function lecturevideos_grade_item_update(stdClass $playlist, ?array $grades = null): int {
+function lecturevideos_grade_item_update(stdClass $playlist, array|string|null $grades = null): int {
     global $CFG;
     require_once($CFG->libdir . '/gradelib.php');
     $item = [
@@ -183,6 +183,10 @@ function lecturevideos_grade_item_update(stdClass $playlist, ?array $grades = nu
         'grademin' => 0,
         'grademax' => 100,
     ];
+    if ($grades === 'reset') {
+        $item['reset'] = true;
+        $grades = null;
+    }
     return grade_update('mod/lecturevideos', $playlist->course, 'mod', 'lecturevideos', $playlist->id, 0, $grades, $item);
 }
 
@@ -277,4 +281,47 @@ function lecturevideos_get_completion_state($course, $cm, int $userid, bool $typ
     global $DB;
     $playlist = $DB->get_record('lecturevideos', ['id' => $cm->instance], '*', MUST_EXIST);
     return (new progress_manager())->get_overall_percent($playlist->id, $userid) >= (float)$playlist->completionpercent;
+}
+
+/**
+ * Course reset form: offer to delete all video progress.
+ *
+ * @param MoodleQuickForm $mform
+ */
+function lecturevideos_reset_course_form_definition(&$mform): void {
+    $mform->addElement('header', 'lecturevideosheader', get_string('modulenameplural', 'lecturevideos'));
+    $mform->addElement('advcheckbox', 'reset_lecturevideos_progress', get_string('resetprogress', 'lecturevideos'));
+}
+
+/**
+ * Course reset defaults.
+ *
+ * @param stdClass $course
+ * @return array
+ */
+function lecturevideos_reset_course_form_defaults($course): array {
+    return ['reset_lecturevideos_progress' => 1];
+}
+
+/**
+ * Course reset: delete all students' progress (and grades) in this course's activities.
+ *
+ * @param stdClass $data Reset form data.
+ * @return array Status lines.
+ */
+function lecturevideos_reset_userdata($data): array {
+    global $DB;
+    if (empty($data->reset_lecturevideos_progress)) {
+        return [];
+    }
+    $playlists = $DB->get_records('lecturevideos', ['course' => $data->courseid]);
+    foreach ($playlists as $playlist) {
+        $DB->delete_records('lecturevideos_sessions', ['playlistid' => $playlist->id]);
+        $DB->delete_records('lecturevideos_progress', ['playlistid' => $playlist->id]);
+        if ((float)$playlist->grade > 0) {
+            lecturevideos_grade_item_update($playlist, 'reset');
+        }
+    }
+    return [['component' => get_string('modulenameplural', 'lecturevideos'),
+        'item' => get_string('resetprogress', 'lecturevideos'), 'error' => false]];
 }

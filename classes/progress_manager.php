@@ -32,6 +32,11 @@ use stdClass;
  * Class progress_manager.
  */
 class progress_manager {
+    /** @var float Seconds of credit a brand-new progress record starts with (covers the first heartbeat). */
+    const CREDIT_START = 6.0;
+    /** @var float Most credit that can build up while idle (one heartbeat after a long pause). */
+    const CREDIT_MAX = 65.0;
+
     /**
      * Method get_videos.
      *
@@ -156,6 +161,9 @@ class progress_manager {
             'videoid' => $video->id, 'userid' => $userid, 'sessionkey' => $params['sessionkey'],
         ]);
         if (!$session) {
+            // Housekeeping: drop this student's finished sessions for this video.
+            $DB->delete_records_select('lecturevideos_sessions', 'videoid = ? AND userid = ? AND lastheartbeat < ?',
+                [$video->id, $userid, $now - DAYSECS]);
             $session = (object)[
                 'playlistid' => $playlist->id, 'videoid' => $video->id, 'userid' => $userid,
                 'sessionkey' => $params['sessionkey'], 'sequence' => 0,
@@ -166,25 +174,28 @@ class progress_manager {
         if ((int)$params['sequence'] <= (int)$session->sequence) {
             return $this->response($playlist, $video, $userid, false, 'oldsequence');
         }
-        $duration = min(604800.0, max(1.0, (float)$params['duration']));
+        // Trust the length stored when the file was uploaded, not the browser's figure.
+        $duration = (float)$video->duration > 0 ? (float)$video->duration
+            : min(604800.0, max(1.0, (float)$params['duration']));
         $start = max(0.0, min($duration, (float)$params['segmentstart']));
         $end = max($start, min($duration, (float)$params['segmentend']));
-        $rate = min(4.0, max(0.25, (float)$params['playbackrate']));
-        $elapsed = max(1, min(60, $now - (int)$session->lastheartbeat));
-        $budget = min(65.0, $elapsed * $rate + 3.0);
-        if ($end - $start > $budget) {
-            $end = min($duration, $start + $budget);
-        }
+        $rate = min(2.0, max(0.25, (float)$params['playbackrate']));
 
         $progress = $this->get_progress($video->id, $userid);
         if (!$progress) {
             $progress = (object)[
                 'playlistid' => $playlist->id, 'videoid' => $video->id, 'userid' => $userid,
                 'duration' => $duration, 'lastposition' => 0, 'uniquewatched' => 0, 'totalwatchtime' => 0,
-                'percent' => 0, 'watchedsegments' => '[]', 'completed' => 0,
+                'percent' => 0, 'watchedsegments' => '[]', 'completed' => 0, 'creditbalance' => self::CREDIT_START,
                 'timecreated' => $now, 'timemodified' => $now,
             ];
         }
+        $beforepercent = (float)$progress->percent;
+        // Credit allowance: refills with real time (at the playback rate) and is spent by every credited second,
+        // so sending many requests (or new session keys) cannot claim more than was really played.
+        $balance = min(self::CREDIT_MAX,
+            (float)$progress->creditbalance + max(0, $now - (int)$progress->timemodified) * $rate);
+        $end = min($end, $start + $balance);
         $stored = json_decode((string)$progress->watchedsegments, true);
         if (!is_array($stored)) {
             $stored = [];
@@ -200,8 +211,9 @@ class progress_manager {
                 }
             }
             if ($start > $frontier + 3.0) {
+                $length = $end - $start;
                 $start = $frontier;
-                $end = min($duration, $start + $budget);
+                $end = min($duration, $start + $length);
             }
         }
         if ($end > $start) {
@@ -217,6 +229,7 @@ class progress_manager {
         $progress->lastposition = max(0.0, min($duration, (float)$params['currentposition']));
         $progress->uniquewatched = round($unique, 3);
         $progress->totalwatchtime = (float)$progress->totalwatchtime + max(0.0, $end - $start);
+        $progress->creditbalance = round(max(0.0, $balance - max(0.0, $end - $start)), 3);
         $progress->percent = $percent;
         $progress->watchedsegments = json_encode($segments, JSON_UNESCAPED_SLASHES);
         $progress->completed = $percent >= (float)$video->minpercent ? 1 : 0;
@@ -232,10 +245,19 @@ class progress_manager {
         $session->timemodified = $now;
         $DB->update_record('lecturevideos_sessions', $session);
 
-        lecturevideos_update_grades($playlist, $userid, false);
-        $completion = new completion_info(get_course($playlist->course));
-        if ($completion->is_enabled($cm)) {
-            $completion->update_state($cm, COMPLETION_UNKNOWN, $userid);
+        if ((float)$playlist->grade > 0) {
+            lecturevideos_update_grades($playlist, $userid, false);
+        }
+        // Completion can only change when a video crosses a threshold (or, in average mode, with any progress).
+        $crossed = false;
+        foreach ([(float)$video->minpercent, (float)$playlist->completionpercent] as $threshold) {
+            $crossed = $crossed || ($beforepercent < $threshold) !== ($percent < $threshold);
+        }
+        if (empty($playlist->completionmode) || $crossed) {
+            $completion = new completion_info(get_course($playlist->course));
+            if ($completion->is_enabled($cm)) {
+                $completion->update_state($cm, COMPLETION_UNKNOWN, $userid);
+            }
         }
         return $this->response($playlist, $video, $userid, true, 'ok');
     }

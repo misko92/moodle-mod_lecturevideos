@@ -65,6 +65,7 @@
                 <FIELD NAME="percent" TYPE="number" LENGTH="6" DECIMALS="2" NOTNULL="true" DEFAULT="0"
                        SEQUENCE="false"/>
                 <FIELD NAME="watchedsegments" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+                <FIELD NAME="creditbalance" TYPE="number" LENGTH="12" DECIMALS="3" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Seconds of viewing that may still be credited; refills with real time"/>
                 <FIELD NAME="completed" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
                 <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
                 <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>

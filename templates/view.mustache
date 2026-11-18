@@ -35,8 +35,8 @@
 <div class="mod-lecturevideos" data-region="lecturevideos" data-cmid="{{cmid}}" data-allowseek="{{allowseek}}">
     {{#hastools}}
     <div class="lv-tools mb-3">
-        {{#canmanage}}<a class="btn btn-secondary btn-sm" href="{{{manageurl}}}">{{#str}}managevideos, lecturevideos{{/str}}</a>{{/canmanage}}
-        {{#canreport}}<a class="btn btn-secondary btn-sm" href="{{{reporturl}}}">{{#str}}viewreport, lecturevideos{{/str}}</a>{{/canreport}}
+        {{#canmanage}}<a class="btn btn-secondary btn-sm" href="{{manageurl}}">{{#str}}managevideos, lecturevideos{{/str}}</a>{{/canmanage}}
+        {{#canreport}}<a class="btn btn-secondary btn-sm" href="{{reporturl}}">{{#str}}viewreport, lecturevideos{{/str}}</a>{{/canreport}}
     </div>
     {{/hastools}}
 
@@ -59,7 +59,7 @@
         <div class="lv-main">
             {{#current}}
             <video class="lv-video nomediaplugin" controls playsinline preload="metadata"
-                   src="{{{src}}}" {{#poster}}poster="{{{poster}}}"{{/poster}}></video>
+                   src="{{src}}" {{#poster}}poster="{{poster}}"{{/poster}}></video>
             <h3 class="lv-title h5 mt-2 mb-1" data-region="title" aria-live="polite">{{title}}</h3>
             <p class="lv-description text-muted mb-2" data-region="description">{{description}}</p>
             <div class="d-flex justify-content-between small mb-1">
@@ -80,7 +80,7 @@
                             data-lastposition="{{lastposition}}" data-segments="{{segments}}"
                             {{#current}}aria-current="true"{{/current}} {{#locked}}disabled{{/locked}}>
                         <span class="lv-thumb">
-                            {{#poster}}<img src="{{{poster}}}" alt="">{{/poster}}
+                            {{#poster}}<img src="{{poster}}" alt="">{{/poster}}
                             {{#duration}}<span class="lv-duration">{{duration}}</span>{{/duration}}
                         </span>
                         <span class="lv-item-body">

@@ -102,3 +102,4 @@ $string['partswatched'] = 'Parts watched';
 $string['reportsummary'] = '{$a->complete} of {$a->total} students complete · {$a->videos} videos';
 $string['videoswatched'] = '{$a->done} of {$a->total} videos watched';
 $string['watchtime'] = 'Time spent';
+$string['resetprogress'] = 'Delete all video progress';

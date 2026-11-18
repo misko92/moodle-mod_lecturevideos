@@ -29,5 +29,16 @@
  * @return bool
  */
 function xmldb_lecturevideos_upgrade(int $oldversion): bool {
+    global $DB;
+    $dbman = $DB->get_manager();
+
+    if ($oldversion < 2026111801) {
+        $table = new xmldb_table('lecturevideos_progress');
+        $field = new xmldb_field('creditbalance', XMLDB_TYPE_NUMBER, '12, 3', null, XMLDB_NOTNULL, null, '0', 'watchedsegments');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+        upgrade_mod_savepoint(true, 2026111801, 'lecturevideos');
+    }
     return true;
 }
