@@ -39,10 +39,7 @@ if ($action === 'delete' && $videoid && confirm_sesskey()) {
     $video = $DB->get_record('lecturevideos_videos', ['id' => $videoid, 'playlistid' => $playlist->id], '*', MUST_EXIST);
     $confirm = optional_param('confirm', 0, PARAM_BOOL);
     if ($confirm) {
-        get_file_storage()->delete_area_files($context->id, 'mod_lecturevideos', 'video', $video->id);
-        $DB->delete_records('lecturevideos_sessions', ['videoid' => $video->id]);
-        $DB->delete_records('lecturevideos_progress', ['videoid' => $video->id]);
-        $DB->delete_records('lecturevideos_videos', ['id' => $video->id]);
+        \mod_lecturevideos\local\videos::delete($context, $video);
         redirect(new moodle_url('/mod/lecturevideos/manage.php', ['id' => $cm->id]), get_string('videodeleted', 'lecturevideos'));
     }
     echo $OUTPUT->header();
@@ -85,7 +82,8 @@ $data = [
 foreach ($videos as $video) {
     $data['videos'][] = [
         'title' => format_string($video->title),
-        'source' => $video->source, 'minpercent' => $video->minpercent, 'enabled' => $video->enabled,
+        'duration' => \mod_lecturevideos\local\videos::format_duration((float)$video->duration),
+        'minpercent' => $video->minpercent, 'enabled' => $video->enabled,
         'editurl' => (new moodle_url('/mod/lecturevideos/video.php',
             ['id' => $cm->id, 'videoid' => $video->id]))->out(false),
         'upurl' => (new moodle_url('/mod/lecturevideos/manage.php',

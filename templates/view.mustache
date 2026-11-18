@@ -17,72 +17,87 @@
 {{!
     @template mod_lecturevideos/view
 
+    One player with the playlist beside it (stacked on narrow screens).
+    Switching videos happens in place; progress is reported by mod_lecturevideos/player.
+
     Example context (json):
     {
-        *Example context (json):*
+        "cmid": 5, "allowseek": 1, "hasvideos": true, "showoverall": true, "overallpercent": 40,
+        "hastools": true, "canmanage": true, "canreport": true, "manageurl": "#", "reporturl": "#",
+        "current": {"id": 1, "index": 1, "title": "1.01 History of the Atom", "description": "", "percent": 80,
+            "src": "#", "poster": "", "lastposition": 0, "segments": "[]"},
+        "videos": [{"id": 1, "index": 1, "title": "1.01 History of the Atom", "duration": "7:15", "percent": 80,
+            "percentexact": 80, "minpercent": 90, "completed": false, "unlocked": true, "locked": false,
+            "started": true, "current": true, "src": "#", "poster": "", "lastposition": 12, "segments": "[]",
+            "description": ""}]
     }
 }}
-<div class="mod-lecturevideos" data-region="lecturevideos">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <div><h2>{{name}}</h2>{{{intro}}}</div>
-        <div>{{#canmanage}}<a class="btn btn-secondary" href="{{{manageurl}}}">{{#str}}
-            managevideos, lecturevideos{{/str}}</a>{{/canmanage}}
-            {{#canreport}}<a class="btn btn-secondary" href="{{{reporturl}}}">{{#str}}
-                viewreport, lecturevideos{{/str}}</a>{{/canreport}}</div>
+<div class="mod-lecturevideos" data-region="lecturevideos" data-cmid="{{cmid}}" data-allowseek="{{allowseek}}">
+    {{#hastools}}
+    <div class="lv-tools mb-3">
+        {{#canmanage}}<a class="btn btn-secondary btn-sm" href="{{{manageurl}}}">{{#str}}managevideos, lecturevideos{{/str}}</a>{{/canmanage}}
+        {{#canreport}}<a class="btn btn-secondary btn-sm" href="{{{reporturl}}}">{{#str}}viewreport, lecturevideos{{/str}}</a>{{/canreport}}
     </div>
-    <div class="card mb-3">
-        <div class="card-body">
-            <div class="d-flex justify-content-between"><strong>{{#str}}
-                overallprogress, lecturevideos{{/str}}</strong><span data-region="overall-percent">{{overallpercent}}
-                %</span></div>
-            <div class="progress" role="progressbar">
-                <div class="progress-bar" data-region="overall-bar" style="width: {{overallpercent}}%"></div>
-            </div>
+    {{/hastools}}
+
+    {{#showoverall}}
+    <div class="lv-overall mb-3">
+        <div class="d-flex justify-content-between mb-1">
+            <strong>{{#str}}overallprogress, lecturevideos{{/str}}</strong>
+            <span data-region="overall-percent">{{overallpercent}}%</span>
+        </div>
+        <div class="progress" role="progressbar" aria-label="{{#str}}overallprogress, lecturevideos{{/str}}"
+             aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{overallpercent}}" data-region="overall-progress">
+            <div class="progress-bar" data-region="overall-bar" style="width: {{overallpercent}}%"></div>
         </div>
     </div>
-    {{^hasvideos}}
-        <div class="alert alert-info">{{#str}}novideos, lecturevideos{{/str}}</div>{{/hasvideos}}
+    {{/showoverall}}
+
+    {{^hasvideos}}<div class="alert alert-info">{{#str}}novideos, lecturevideos{{/str}}</div>{{/hasvideos}}
     {{#hasvideos}}
-        <div class="row g-3">
-            <div class="col-lg-4">
-                <div class="list-group">
-                    {{#videos}}
-                        <a class="list-group-item list-group-item-action {{#current}}active{{/current}} {{#locked}}disabled{{/locked}}"
-                           {{#unlocked}}href="{{{url}}}"{{/unlocked}} data-video-list-id="{{id}}">
-                            <div class="d-flex justify-content-between"><span>{{title}}</span><span>{{percent}}%</span>
-                            </div>
-                            <div class="progress mt-2" style="height: 5px">
-                                <div class="progress-bar" data-video-bar="{{id}}" style="width: {{percent}}%"></div>
-                            </div>
-                            <small>{{#completed}}{{#str}}
-                                statuscompleted, lecturevideos{{/str}}{{/completed}}{{#locked}}{{#str}}
-                                statuslocked, lecturevideos{{/str}}{{/locked}}{{#notstarted}}{{^locked}}{{#str}}
-                                statusnotstarted, lecturevideos{{/str}}{{/locked}}{{/notstarted}}</small>
-                        </a>{{/videos}}
-                </div>
+    <div class="lv-layout">
+        <div class="lv-main">
+            {{#current}}
+            <video class="lv-video nomediaplugin" controls playsinline preload="metadata"
+                   src="{{{src}}}" {{#poster}}poster="{{{poster}}}"{{/poster}}></video>
+            <h3 class="lv-title h5 mt-2 mb-1" data-region="title" aria-live="polite">{{title}}</h3>
+            <p class="lv-description text-muted mb-2" data-region="description">{{description}}</p>
+            <div class="d-flex justify-content-between small mb-1">
+                <span>{{#str}}videoprogress, lecturevideos{{/str}}</span>
+                <span data-region="video-percent">{{percent}}%</span>
             </div>
-            <div class="col-lg-8">
-                {{#current}}
-                    <div class="card">
-                        <div class="card-body"><h3>{{title}}</h3>
-                            <p>{{description}}</p>
-                            <div class="lecturevideos-player" data-cmid="{{cmid}}" data-videoid="{{id}}"
-                                 data-source="{{source}}" data-src="{{{src}}}" data-lastposition="{{lastposition}}"
-                                 data-percent="{{percent}}" data-segments='{{segments}}' data-allowseek="{{allowseek}}">
-                                <div data-region="player"></div>
-                                <div class="mt-2">
-                                    <div class="d-flex justify-content-between"><span>{{#str}}
-                                        videoprogress, lecturevideos{{/str}}</span><span
-                                            data-region="video-percent">{{percent}}%</span></div>
-                                    <div class="progress">
-                                        <div class="progress-bar" data-region="video-bar"
-                                             style="width: {{percent}}%"></div>
-                                    </div>
-                                    <div class="lecturevideos-timeline mt-1" data-region="timeline"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>{{/current}}
-            </div>
-        </div>{{/hasvideos}}
+            <div class="lv-timeline" data-region="timeline" title="{{#str}}watchedparts, lecturevideos{{/str}}"></div>
+            {{/current}}
+            {{^current}}<div class="alert alert-warning">{{#str}}videolocked, lecturevideos{{/str}}</div>{{/current}}
+        </div>
+        <div class="lv-side">
+            <ol class="list-group lv-list" data-region="list">
+                {{#videos}}
+                <li>
+                    <button type="button" class="list-group-item list-group-item-action lv-item{{#current}} active{{/current}}"
+                            data-region="item" data-id="{{id}}" data-src="{{src}}" data-poster="{{poster}}"
+                            data-title="{{title}}" data-description="{{description}}" data-percent="{{percentexact}}" data-minpercent="{{minpercent}}"
+                            data-lastposition="{{lastposition}}" data-segments="{{segments}}"
+                            {{#current}}aria-current="true"{{/current}} {{#locked}}disabled{{/locked}}>
+                        <span class="lv-thumb">
+                            {{#poster}}<img src="{{{poster}}}" alt="">{{/poster}}
+                            {{#duration}}<span class="lv-duration">{{duration}}</span>{{/duration}}
+                        </span>
+                        <span class="lv-item-body">
+                            <span class="lv-item-title">{{title}}</span>
+                            <span class="lv-item-status small">
+                                {{#locked}}<span>{{#pix}}t/locked, core{{/pix}}{{#str}}statuslocked, lecturevideos{{/str}}</span>{{/locked}}
+                                {{^locked}}<span data-region="item-status">{{#completed}}✓ {{#str}}statuscompleted, lecturevideos{{/str}}{{/completed}}{{^completed}}{{#started}}{{percent}}%{{/started}}{{/completed}}</span>{{/locked}}
+                            </span>
+                            <span class="progress lv-item-progress" aria-hidden="true">
+                                <span class="progress-bar" data-region="item-bar" style="width: {{percent}}%"></span>
+                            </span>
+                        </span>
+                    </button>
+                </li>
+                {{/videos}}
+            </ol>
+        </div>
+    </div>
+    {{/hasvideos}}
 </div>

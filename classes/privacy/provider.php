@@ -49,6 +49,11 @@ class provider implements metadata_provider, plugin_provider {
             'watchedsegments' => 'privacy:metadata:progress:segments',
             'totalwatchtime' => 'privacy:metadata:progress:watchtime',
         ], 'privacy:metadata:progress');
+        $collection->add_database_table('lecturevideos_sessions', [
+            'userid' => 'privacy:metadata:sessions:userid',
+            'timecreated' => 'privacy:metadata:sessions:timecreated',
+            'lastheartbeat' => 'privacy:metadata:sessions:lastheartbeat',
+        ], 'privacy:metadata:sessions');
         return $collection;
     }
 

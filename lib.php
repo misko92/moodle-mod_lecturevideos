@@ -129,24 +129,30 @@ function lecturevideos_delete_instance(int $id): bool {
  */
 function mod_lecturevideos_pluginfile($course, $cm, $context, string $filearea, array $args,
                                       bool $forcedownload, array $options = []): bool {
-    global $DB;
-    if ($context->contextlevel !== CONTEXT_MODULE || $filearea !== 'video') {
+    global $DB, $USER;
+    if ($context->contextlevel !== CONTEXT_MODULE || !in_array($filearea, ['video', 'poster'], true)) {
         return false;
     }
     require_login($course, true, $cm);
     require_capability('mod/lecturevideos:view', $context);
     $videoid = (int)array_shift($args);
     $video = $DB->get_record('lecturevideos_videos', ['id' => $videoid, 'playlistid' => $cm->instance], '*', MUST_EXIST);
-    if ($video->source !== 'upload') {
-        return false;
+    if ($filearea === 'video' && !has_capability('mod/lecturevideos:managevideos', $context)) {
+        // Students only get enabled videos they have unlocked.
+        $playlist = $DB->get_record('lecturevideos', ['id' => $cm->instance], '*', MUST_EXIST);
+        if (empty($video->enabled) ||
+                !(new \mod_lecturevideos\progress_manager())->is_video_unlocked($playlist, $video, $USER->id)) {
+            return false;
+        }
     }
     $filename = array_pop($args);
     $filepath = '/' . ($args ? implode('/', $args) . '/' : '');
-    $file = get_file_storage()->get_file($context->id, 'mod_lecturevideos', 'video', $videoid, $filepath, $filename);
+    $file = get_file_storage()->get_file($context->id, 'mod_lecturevideos', $filearea, $videoid, $filepath, $filename);
     if (!$file || $file->is_directory()) {
         return false;
     }
-    send_stored_file($file, 0, 0, $forcedownload, $options);
+    // Private caching: lets browsers keep the file a day without shared caches storing it.
+    send_stored_file($file, DAYSECS, 0, $forcedownload, array_merge($options, ['cacheability' => 'private']));
 }
 
 /**
@@ -158,7 +164,7 @@ function mod_lecturevideos_pluginfile($course, $cm, $context, string $filearea, 
  * @return array The available file areas.
  */
 function lecturevideos_get_file_areas($course, $cm, $context): array {
-    return ['video' => get_string('videofile', 'lecturevideos')];
+    return ['video' => get_string('videofile', 'lecturevideos'), 'poster' => get_string('posterfile', 'lecturevideos')];
 }
 
 /**
@@ -227,7 +233,7 @@ function lecturevideos_update_grades(stdClass $playlist, int $userid = 0, bool $
  */
 function lecturevideos_get_coursemodule_info(stdClass $cm): cached_cm_info|null {
     global $DB;
-    $playlist = $DB->get_record('lecturevideos', ['id' => $cm->instance], 'id,name,intro,introformat,completionpercent');
+    $playlist = $DB->get_record('lecturevideos', ['id' => $cm->instance], 'id,name,intro,introformat,completionpercent,completionmode');
     if (!$playlist) {
         return null;
     }
@@ -238,6 +244,7 @@ function lecturevideos_get_coursemodule_info(stdClass $cm): cached_cm_info|null 
     }
     if ((int)$cm->completion === COMPLETION_TRACKING_AUTOMATIC) {
         $info->customdata['customcompletionrules'] = ['completionpercent' => (int)$playlist->completionpercent];
+        $info->customdata['completionmode'] = (int)$playlist->completionmode;
     }
     return $info;
 }
@@ -253,8 +260,8 @@ function lecturevideos_get_completion_active_rule_descriptions(cached_cm_info $c
         empty($cm->customdata['customcompletionrules']['completionpercent'])) {
         return [];
     }
-    return [get_string('completiondetail:percent', 'lecturevideos',
-        $cm->customdata['customcompletionrules']['completionpercent'])];
+    $key = empty($cm->customdata['completionmode']) ? 'completiondetail:percent' : 'completiondetail:each';
+    return [get_string($key, 'lecturevideos', $cm->customdata['customcompletionrules']['completionpercent'])];
 }
 
 /**

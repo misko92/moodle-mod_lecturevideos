@@ -53,7 +53,7 @@ class mod_lecturevideos_mod_form extends moodleform_mod {
         ]);
         $mform->setDefault('resumeplayback', 1);
         $this->standard_grading_coursemodule_elements();
-        $mform->setDefault('grade', 100);
+        $mform->setDefault('grade', 0);
         $this->standard_coursemodule_elements();
         $this->add_action_buttons();
     }
@@ -65,12 +65,21 @@ class mod_lecturevideos_mod_form extends moodleform_mod {
      */
     public function add_completion_rules(): array {
         $mform = $this->_form;
-        $field = 'completionpercent_lecturevideos';
-        $mform->addElement('text', $field, get_string('completionpercent', 'lecturevideos'), ['size' => 5]);
-        $mform->setType($field, PARAM_INT);
-        $mform->setDefault($field, 80);
-        $mform->addRule($field, null, 'numeric', null, 'client');
-        return [$field];
+        $suffix = '_lecturevideos';
+        $group = [
+            $mform->createElement('select', 'completionmode' . $suffix, '', [
+                1 => get_string('completionmodeeach', 'lecturevideos'),
+                0 => get_string('completionmodeaverage', 'lecturevideos'),
+            ]),
+            $mform->createElement('text', 'completionpercent' . $suffix, '', ['size' => 4]),
+            $mform->createElement('static', 'completionpercentsign' . $suffix, '', '%'),
+        ];
+        $mform->addGroup($group, 'completiongroup' . $suffix, get_string('completionpercent', 'lecturevideos'), ' ', false);
+        $mform->addHelpButton('completiongroup' . $suffix, 'completionpercent', 'lecturevideos');
+        $mform->setType('completionpercent' . $suffix, PARAM_INT);
+        $mform->setDefault('completionpercent' . $suffix, 90);
+        $mform->setDefault('completionmode' . $suffix, 1);
+        return ['completiongroup' . $suffix];
     }
 
     /**
@@ -90,8 +99,10 @@ class mod_lecturevideos_mod_form extends moodleform_mod {
      * @return void Return value.
      */
     public function data_preprocessing(&$defaultvalues): void {
-        if (array_key_exists('completionpercent', $defaultvalues)) {
-            $defaultvalues['completionpercent_lecturevideos'] = $defaultvalues['completionpercent'];
+        foreach (['completionpercent', 'completionmode'] as $field) {
+            if (array_key_exists($field, $defaultvalues)) {
+                $defaultvalues[$field . '_lecturevideos'] = $defaultvalues[$field];
+            }
         }
     }
 
@@ -102,9 +113,13 @@ class mod_lecturevideos_mod_form extends moodleform_mod {
      */
     public function get_data() {
         $data = parent::get_data();
-        if ($data && property_exists($data, 'completionpercent_lecturevideos')) {
-            $data->completionpercent = $data->completionpercent_lecturevideos;
-            unset($data->completionpercent_lecturevideos);
+        if ($data) {
+            foreach (['completionpercent', 'completionmode'] as $field) {
+                if (property_exists($data, $field . '_lecturevideos')) {
+                    $data->$field = $data->{$field . '_lecturevideos'};
+                    unset($data->{$field . '_lecturevideos'});
+                }
+            }
         }
         return $data;
     }

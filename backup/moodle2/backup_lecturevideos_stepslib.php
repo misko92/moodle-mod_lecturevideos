@@ -36,11 +36,11 @@ class backup_lecturevideos_activity_structure_step extends backup_activity_struc
         $activity = new backup_nested_element('lecturevideos', ['id'],
             [
                 'name', 'intro', 'introformat', 'sequential', 'allowseek', 'resumeplayback',
-                'completionpercent', 'grade', 'timecreated', 'timemodified',
+                'completionpercent', 'completionmode', 'grade', 'timecreated', 'timemodified',
             ]);
         $videos = new backup_nested_element('videos');
         $video = new backup_nested_element('video', ['id'],
-            ['title', 'description', 'source', 'sourceurl', 'minpercent', 'sortorder', 'enabled', 'timecreated', 'timemodified']);
+            ['title', 'description', 'minpercent', 'duration', 'sortorder', 'enabled', 'timecreated', 'timemodified']);
         $progresses = new backup_nested_element('progresses');
         $progress = new backup_nested_element('progress', ['id'],
             [
@@ -57,7 +57,9 @@ class backup_lecturevideos_activity_structure_step extends backup_activity_struc
             $progress->set_source_table('lecturevideos_progress', ['playlistid' => backup::VAR_ACTIVITYID]);
         }
         $progress->annotate_ids('user', 'userid');
+        $activity->annotate_files('mod_lecturevideos', 'intro', null);
         $video->annotate_files('mod_lecturevideos', 'video', 'id');
+        $video->annotate_files('mod_lecturevideos', 'poster', 'id');
         return $this->prepare_activity_structure($activity);
     }
 }

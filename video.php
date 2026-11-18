@@ -37,45 +37,39 @@ $PAGE->set_url('/mod/lecturevideos/video.php', ['id' => $cm->id, 'videoid' => $v
 $PAGE->set_title($video ? get_string('editvideo', 'lecturevideos') : get_string('addvideo', 'lecturevideos'));
 $PAGE->set_heading(format_string($course->fullname));
 $form = new \mod_lecturevideos\form\video_form();
-$draftid = file_get_submitted_draft_itemid('videofile');
+$fileopts = ['subdirs' => 0, 'maxfiles' => 1];
+$videodraft = file_get_submitted_draft_itemid('videofile');
+$posterdraft = file_get_submitted_draft_itemid('posterfile');
 if ($video) {
-    file_prepare_draft_area($draftid, $context->id, 'mod_lecturevideos', 'video', $video->id, ['subdirs' => 0, 'maxfiles' => 1]);
-    $video->videofile = $draftid;
-    $video->cmid = $cm->id;
-    $video->videoid = $video->id;
-    $form->set_data($video);
+    file_prepare_draft_area($videodraft, $context->id, 'mod_lecturevideos', 'video', $video->id, $fileopts);
+    file_prepare_draft_area($posterdraft, $context->id, 'mod_lecturevideos', 'poster', $video->id, $fileopts);
+    $form->set_data((object)['cmid' => $cm->id, 'videoid' => $video->id, 'title' => $video->title,
+        'description' => $video->description, 'minpercent' => $video->minpercent, 'enabled' => $video->enabled,
+        'videofile' => $videodraft, 'posterfile' => $posterdraft]);
 } else {
-    $form->set_data((object)['cmid' => $cm->id, 'videoid' => 0, 'videofile' => $draftid]);
+    file_prepare_draft_area($videodraft, null, null, null, null, $fileopts);
+    file_prepare_draft_area($posterdraft, null, null, null, null, $fileopts);
+    $form->set_data((object)['cmid' => $cm->id, 'videoid' => 0, 'videofile' => $videodraft, 'posterfile' => $posterdraft]);
 }
 if ($form->is_cancelled()) {
     redirect(new moodle_url('/mod/lecturevideos/manage.php', ['id' => $cm->id]));
 }
 if ($data = $form->get_data()) {
-    $now = time();
     if ($video) {
         $video->title = $data->title;
         $video->description = $data->description;
-        $video->source = $data->source;
-        $video->sourceurl = $data->source === 'upload' ? '' : $data->sourceurl;
         $video->minpercent = $data->minpercent;
         $video->enabled = $data->enabled;
-        $video->timemodified = $now;
+        $video->timemodified = time();
         $DB->update_record('lecturevideos_videos', $video);
     } else {
-        $max = $DB->get_field_sql(
-            'SELECT COALESCE(MAX(sortorder), -1) FROM {lecturevideos_videos} WHERE playlistid = ?', [$playlist->id]);
-        $video = (object)['playlistid' => $playlist->id, 'title' => $data->title, 'description' => $data->description,
-            'source' => $data->source, 'sourceurl' => $data->source === 'upload' ? '' : $data->sourceurl,
-            'minpercent' => $data->minpercent, 'sortorder' => ((int)$max) + 1, 'enabled' => $data->enabled,
-            'timecreated' => $now, 'timemodified' => $now];
-        $video->id = $DB->insert_record('lecturevideos_videos', $video);
+        $video = \mod_lecturevideos\local\videos::add($playlist->id, $data->title, (int)$data->minpercent,
+            (string)$data->description);
+        $DB->set_field('lecturevideos_videos', 'enabled', $data->enabled, ['id' => $video->id]);
     }
-    if ($data->source === 'upload') {
-        file_save_draft_area_files($data->videofile, $context->id, 'mod_lecturevideos',
-            'video', $video->id, ['subdirs' => 0, 'maxfiles' => 1]);
-    } else {
-        get_file_storage()->delete_area_files($context->id, 'mod_lecturevideos', 'video', $video->id);
-    }
+    file_save_draft_area_files($data->videofile, $context->id, 'mod_lecturevideos', 'video', $video->id, $fileopts);
+    file_save_draft_area_files($data->posterfile, $context->id, 'mod_lecturevideos', 'poster', $video->id, $fileopts);
+    \mod_lecturevideos\local\videos::refresh_duration($context, $video);
     redirect(new moodle_url('/mod/lecturevideos/manage.php', ['id' => $cm->id]), get_string('videosaved', 'lecturevideos'));
 }
 echo $OUTPUT->header();

@@ -32,7 +32,7 @@
         <thead>
         <tr>
             <th>{{#str}}videotitle, lecturevideos{{/str}}</th>
-            <th>{{#str}}videosource, lecturevideos{{/str}}</th>
+            <th>{{#str}}duration, lecturevideos{{/str}}</th>
             <th>{{#str}}minpercent, lecturevideos{{/str}}</th>
             <th>{{#str}}enabled, lecturevideos{{/str}}</th>
             <th>{{#str}}actions, lecturevideos{{/str}}</th>
@@ -42,7 +42,7 @@
         {{#videos}}
             <tr>
                 <td>{{title}}</td>
-                <td>{{source}}</td>
+                <td>{{duration}}</td>
                 <td>{{minpercent}}%</td>
                 <td>{{#enabled}}{{#str}}yes{{/str}}{{/enabled}}{{^enabled}}{{#str}}no{{/str}}{{/enabled}}</td>
                 <td><a href="{{{editurl}}}">{{#str}}edit{{/str}}</a> · <a href="{{{upurl}}}">↑</a> · <a

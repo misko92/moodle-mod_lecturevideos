@@ -19,11 +19,13 @@
  *
  * @package   mod_lecturevideos
  * @copyright 2026 Eduardo Kraus {@link https://eduardokraus.com}
+ * @copyright 2026 misko92 (single-page player, posters, durations)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 require('../../config.php');
 
+use mod_lecturevideos\local\videos;
 use mod_lecturevideos\progress_manager;
 
 $id = required_param('id', PARAM_INT);
@@ -39,27 +41,30 @@ $PAGE->set_title(format_string($playlist->name));
 $PAGE->set_heading(format_string($course->fullname));
 $PAGE->requires->js_call_amd('mod_lecturevideos/player', 'init');
 $manager = new progress_manager();
-$videos = $manager->get_videos($playlist->id);
 $items = [];
-$current = null;
-foreach ($videos as $video) {
+foreach ($manager->get_videos($playlist->id) as $i => $video) {
     $progress = $manager->get_progress($video->id, $USER->id);
     $unlocked = $manager->is_video_unlocked($playlist, $video, $USER->id);
     $percent = $progress ? (float)$progress->percent : 0.0;
-    $completed = $percent >= (float)$video->minpercent;
-    $item = [
-        'id' => $video->id, 'title' => format_string($video->title), 'description' => s($video->description),
-        'percent' => round($percent, 2), 'completed' => $completed, 'unlocked' => $unlocked,
-        'locked' => !$unlocked, 'notstarted' => !$progress, 'current' => false,
-        'url' => (new moodle_url('/mod/lecturevideos/view.php', ['id' => $cm->id, 'video' => $video->id]))->out(false),
-        'minpercent' => (int)$video->minpercent,
+    $items[$video->id] = [
+        'id' => $video->id, 'index' => $i + 1, 'title' => format_string($video->title),
+        'description' => (string)$video->description,
+        'duration' => videos::format_duration((float)$video->duration),
+        'percent' => round($percent), 'percentexact' => round($percent, 2),
+        'completed' => $percent >= (float)$video->minpercent, 'minpercent' => (int)$video->minpercent,
+        'unlocked' => $unlocked, 'locked' => !$unlocked, 'started' => (bool)$progress,
+        'src' => $unlocked ? videos::url($context, $video->id, 'video') : '',
+        'poster' => videos::url($context, $video->id, 'poster'),
+        'lastposition' => $progress && $playlist->resumeplayback ? (float)$progress->lastposition : 0,
+        'segments' => $progress ? (string)$progress->watchedsegments : '[]',
+        'current' => false,
     ];
-    $items[$video->id] = $item;
 }
-if ($videoid && isset($items[$videoid]) && $items[$videoid]['unlocked']) {
+// Start on the requested video, else the first unlocked one not yet completed, else the first unlocked one.
+$currentid = 0;
+if ($videoid && !empty($items[$videoid]['unlocked'])) {
     $currentid = $videoid;
 } else {
-    $currentid = 0;
     foreach ($items as $vid => $item) {
         if ($item['unlocked'] && !$item['completed']) {
             $currentid = $vid;
@@ -76,41 +81,20 @@ if ($videoid && isset($items[$videoid]) && $items[$videoid]['unlocked']) {
     }
 }
 if ($currentid) {
-    $video = $DB->get_record('lecturevideos_videos', ['id' => $currentid], '*', MUST_EXIST);
-    $progress = $manager->get_progress($video->id, $USER->id);
-    $src = '';
-    if ($video->source === 'upload') {
-        $files = get_file_storage()->get_area_files($context->id, 'mod_lecturevideos', 'video', $video->id, 'filename', false);
-        if ($files) {
-            $file = reset($files);
-            $src = moodle_url::make_pluginfile_url($context->id,
-                'mod_lecturevideos', 'video', $video->id, $file->get_filepath(),
-                $file->get_filename())->out(false);
-        }
-    } else {
-        $src = (string)$video->sourceurl;
-    }
-    $current = [
-        'id' => $video->id,
-        'title' => format_string($video->title),
-        'description' => format_text($video->description, FORMAT_PLAIN),
-        'source' => $video->source, 'src' => $src,
-        'lastposition' => $progress && $playlist->resumeplayback ? (float)$progress->lastposition : 0,
-        'percent' => $progress ? (float)$progress->percent : 0,
-        'segments' => $progress ? (string)$progress->watchedsegments : '[]',
-        'cmid' => $cm->id, 'allowseek' => !empty($playlist->allowseek),
-    ];
     $items[$currentid]['current'] = true;
 }
-$overall = $manager->get_overall_percent($playlist->id, $USER->id);
 $data = [
-    'name' => format_string($playlist->name), 'intro' => format_module_intro('lecturevideos', $playlist, $cm->id, false),
-    'videos' => array_values($items), 'hasvideos' => !empty($items), 'current' => $current,
-    'overallpercent' => $overall, 'manageurl' => (new moodle_url('/mod/lecturevideos/manage.php', ['id' => $cm->id]))->out(false),
+    'cmid' => $cm->id, 'allowseek' => (int)!empty($playlist->allowseek),
+    'videos' => array_values($items), 'hasvideos' => !empty($items),
+    'current' => $currentid ? $items[$currentid] : null,
+    'overallpercent' => round($manager->get_overall_percent($playlist->id, $USER->id)),
+    'showoverall' => count($items) > 1,
+    'manageurl' => (new moodle_url('/mod/lecturevideos/manage.php', ['id' => $cm->id]))->out(false),
     'reporturl' => (new moodle_url('/mod/lecturevideos/report.php', ['id' => $cm->id]))->out(false),
     'canmanage' => has_capability('mod/lecturevideos:managevideos', $context),
     'canreport' => has_capability('mod/lecturevideos:viewreport', $context),
 ];
+$data['hastools'] = $data['canmanage'] || $data['canreport'];
 $event = \mod_lecturevideos\event\course_module_viewed::create(['objectid' => $playlist->id, 'context' => $context]);
 $event->add_record_snapshot('course', $course);
 $event->add_record_snapshot('course_modules', $cm);

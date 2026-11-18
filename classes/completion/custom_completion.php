@@ -41,8 +41,21 @@ class custom_completion extends activity_custom_completion {
         global $DB;
         $this->validate_rule($rule);
         $playlist = $DB->get_record('lecturevideos', ['id' => $this->cm->instance], '*', MUST_EXIST);
-        $percent = (new progress_manager())->get_overall_percent($playlist->id, $this->userid);
-        return $percent >= (float)$playlist->completionpercent ? COMPLETION_COMPLETE : COMPLETION_INCOMPLETE;
+        $manager = new progress_manager();
+        $required = (float)$playlist->completionpercent;
+        if (!empty($playlist->completionmode)) {
+            // Every enabled video must reach the required percentage.
+            $videos = $manager->get_videos($playlist->id);
+            foreach ($videos as $video) {
+                $progress = $manager->get_progress($video->id, $this->userid);
+                if (!$progress || (float)$progress->percent < $required) {
+                    return COMPLETION_INCOMPLETE;
+                }
+            }
+            return $videos ? COMPLETION_COMPLETE : COMPLETION_INCOMPLETE;
+        }
+        $percent = $manager->get_overall_percent($playlist->id, $this->userid);
+        return $percent >= $required ? COMPLETION_COMPLETE : COMPLETION_INCOMPLETE;
     }
 
     /**
@@ -62,7 +75,8 @@ class custom_completion extends activity_custom_completion {
     public function get_custom_rule_descriptions(): array {
         global $DB;
         $playlist = $DB->get_record('lecturevideos', ['id' => $this->cm->instance], '*', MUST_EXIST);
-        return ['completionpercent' => get_string('completiondetail:percent', 'lecturevideos', $playlist->completionpercent)];
+        $key = empty($playlist->completionmode) ? 'completiondetail:percent' : 'completiondetail:each';
+        return ['completionpercent' => get_string($key, 'lecturevideos', $playlist->completionpercent)];
     }
 
     /**

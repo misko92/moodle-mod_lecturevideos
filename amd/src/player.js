@@ -14,617 +14,296 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * player.js
+ * One HTML5 player with an in-page playlist; reports the parts actually watched.
  *
- * @package   mod_lecturevideos
- * @copyright 2026 Eduardo Kraus {@link https://eduardokraus.com}
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * Based on the tracker of mod_videoplaylist by Eduardo Kraus. Changes: in-place video switching,
+ * an opening heartbeat so the first seconds are credited, the segment before a seek is kept,
+ * requests are sent one at a time in order, and progress is flushed when the page is hidden.
+ *
+ * @module     mod_lecturevideos/player
+ * @copyright  2026 Eduardo Kraus {@link https://eduardokraus.com}
+ * @copyright  2026 misko92
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-define(['core/ajax'], function(Ajax) {
+import Ajax from 'core/ajax';
+import {getString} from 'core/str';
 
-    const randomKey = () => Array.from(
-        crypto.getRandomValues(new Uint8Array(24))
-    ).map(
-        v => v.toString(16).padStart(2, '0')
-    ).join('');
+const HEARTBEAT = 5;
 
-    const parseYouTubeId = url => {
-        try {
-            const u = new URL(url);
+const randomKey = () => Array.from(crypto.getRandomValues(new Uint8Array(24)))
+    .map(v => v.toString(16).padStart(2, '0')).join('');
 
-            if (u.hostname.includes('youtu.be')) {
-                return u.pathname.slice(1);
-            }
+const parseSegments = text => {
+    try {
+        const s = JSON.parse(text || '[]');
+        return Array.isArray(s) ? s : [];
+    } catch (e) {
+        return [];
+    }
+};
 
-            if (u.searchParams.get('v')) {
-                return u.searchParams.get('v');
-            }
+/**
+ * Seconds watched without a gap from the start (used when skipping ahead is not allowed).
+ *
+ * @param {Array} segments
+ * @returns {number}
+ */
+const frontier = segments => {
+    let end = 0;
+    segments.slice().sort((a, b) => a[0] - b[0]).forEach(s => {
+        if (s[0] <= end + 1) {
+            end = Math.max(end, s[1]);
+        }
+    });
+    return end;
+};
 
-            const m = u.pathname.match(
-                /\/(embed|shorts)\/([^/?]+)/
-            );
+const renderTimeline = (el, segments, duration) => {
+    if (!el) {
+        return;
+    }
+    el.replaceChildren();
+    if (!duration) {
+        return;
+    }
+    segments.forEach(s => {
+        const span = document.createElement('span');
+        span.style.left = (100 * s[0] / duration) + '%';
+        span.style.width = (100 * (s[1] - s[0]) / duration) + '%';
+        el.append(span);
+    });
+};
 
-            return m ? m[2] : '';
+export const init = () => {
+    const root = document.querySelector('[data-region="lecturevideos"]');
+    const video = root ? root.querySelector('video.lv-video') : null;
+    if (!video) {
+        return;
+    }
+    const cmid = Number(root.dataset.cmid);
+    const allowseek = root.dataset.allowseek === '1';
+    const items = Array.from(root.querySelectorAll('[data-region="item"]'));
+    let item = items.find(b => b.classList.contains('active'));
+    let completedText = '';
+    getString('statuscompleted', 'mod_lecturevideos').then(s => {
+        completedText = s;
+        return s;
+    }).catch(() => null);
 
-        } catch (e) {
-            return '';
+    // Tracking state for the current video.
+    let sessionkey = '';
+    let seq = 0;
+    let segStart = null;
+    let lastTime = 0;
+    let lastSent = 0;
+    let maxSeen = 0;
+    let queue = Promise.resolve();
+
+    const updateUI = (target, data) => {
+        const pct = Math.round(Number(data.percent));
+        target.dataset.percent = data.percent;
+        target.dataset.segments = data.segments;
+        target.dataset.lastposition = data.lastposition;
+        const bar = target.querySelector('[data-region="item-bar"]');
+        if (bar) {
+            bar.style.width = pct + '%';
+        }
+        const status = target.querySelector('[data-region="item-status"]');
+        if (status) {
+            status.textContent = Number(data.percent) >= Number(target.dataset.minpercent)
+                ? '✓ ' + completedText : pct + '%';
+        }
+        const overall = Math.round(Number(data.overallpercent));
+        const op = root.querySelector('[data-region="overall-percent"]');
+        if (op) {
+            op.textContent = overall + '%';
+            root.querySelector('[data-region="overall-bar"]').style.width = overall + '%';
+            root.querySelector('[data-region="overall-progress"]').setAttribute('aria-valuenow', overall);
+        }
+        if (target === item) {
+            root.querySelector('[data-region="video-percent"]').textContent = pct + '%';
+            renderTimeline(root.querySelector('[data-region="timeline"]'), parseSegments(data.segments), video.duration);
         }
     };
 
-    const parseVimeoId = url => {
-        const m = String(url).match(
-            /vimeo\.com\/(?:video\/)?(\d+)/
-        );
-
-        return m ? m[1] : '';
-    };
-
-    const renderTimeline = (el, segments, duration) => {
-        el.replaceChildren();
-
-        if (!duration) {
+    /**
+     * Queue one report. Reports go out one at a time so the server sees them in order.
+     *
+     * @param {number} start
+     * @param {number} end
+     * @param {number} position
+     */
+    const report = (start, end, position) => {
+        if (!item || !video.duration || !isFinite(video.duration)) {
             return;
         }
-
-        segments.forEach(s => {
-            const span = document.createElement('span');
-
-            span.style.left =
-                (100 * s[0] / duration) + '%';
-
-            span.style.width =
-                (100 * (s[1] - s[0]) / duration) + '%';
-
-            el.append(span);
-        });
-    };
-
-    const updateUI = (root, data, duration) => {
-        root.querySelector(
-            '[data-region="video-percent"]'
-        ).textContent =
-            Number(data.percent).toFixed(2) + '%';
-
-        root.querySelector(
-            '[data-region="video-bar"]'
-        ).style.width =
-            data.percent + '%';
-
-        document.querySelector(
-            '[data-region="overall-percent"]'
-        ).textContent =
-            Number(data.overallpercent).toFixed(2) + '%';
-
-        document.querySelector(
-            '[data-region="overall-bar"]'
-        ).style.width =
-            data.overallpercent + '%';
-
-        const listbar = document.querySelector(
-            '[data-video-bar="' +
-            root.dataset.videoid +
-            '"]'
-        );
-
-        if (listbar) {
-            listbar.style.width =
-                data.percent + '%';
-        }
-
-        try {
-            renderTimeline(
-                root.querySelector(
-                    '[data-region="timeline"]'
-                ),
-                JSON.parse(
-                    data.segments || '[]'
-                ),
-                duration
-            );
-
-        } catch (e) {
-            // Ignore invalid old data.
-        }
-    };
-
-    const sender = root => {
-        let seq = 0;
-        let sessionkey = randomKey();
-        let pendingStart = null;
-        let lastPosition = 0;
-        let duration = 0;
-        let rate = 1;
-
-        const send = (position, force = false) => {
-            if (
-                !duration ||
-                pendingStart === null
-            ) {
-                lastPosition = position;
-
-                if (force) {
-                    pendingStart = position;
-                }
-
-                return Promise.resolve();
-            }
-
-            const start = pendingStart;
-            const end = Math.max(
-                start,
-                position
-            );
-
-            pendingStart = position;
-            lastPosition = position;
-            seq++;
-
-            return Ajax.call([{
-                methodname:
-                    'mod_lecturevideos_update_progress',
-
-                args: {
-                    cmid: Number(
-                        root.dataset.cmid
-                    ),
-
-                    videoid: Number(
-                        root.dataset.videoid
-                    ),
-
-                    currentposition: position,
-                    duration: duration,
-                    segmentstart: start,
-                    segmentend: end,
-                    playbackrate: rate,
-                    sequence: seq,
-                    sessionkey: sessionkey
-                }
-            }])[0]
-                .then(
-                    data => updateUI(
-                        root,
-                        data,
-                        duration
-                    )
-                )
-                .catch(() => {
-                });
+        const target = item;
+        const args = {
+            cmid: cmid, videoid: Number(target.dataset.id), currentposition: position, duration: video.duration,
+            segmentstart: start, segmentend: Math.max(start, end), playbackrate: video.playbackRate || 1,
+            sequence: ++seq, sessionkey: sessionkey,
         };
-
-        return {
-            setDuration: v => {
-                duration = v;
-            },
-
-            setRate: v => {
-                rate = v || 1;
-            },
-
-            start: p => {
-                pendingStart = p;
-                lastPosition = p;
-            },
-
-            tick: p => {
-                if (pendingStart === null) {
-                    pendingStart = p;
-                }
-
-                if (
-                    Math.abs(
-                        p - lastPosition
-                    ) >= 5
-                ) {
-                    send(p);
-                }
-            },
-
-            pause: p => send(
-                p,
-                true
-            ),
-
-            seek: (
-                from,
-                to,
-                allowed,
-                max
-            ) => {
-                if (
-                    !allowed &&
-                    to > max + 3
-                ) {
-                    return max;
-                }
-
-                pendingStart = to;
-                lastPosition = to;
-
-                return to;
-            },
-
-            resume: () => Number(
-                root.dataset.lastposition || 0
-            )
-        };
+        lastSent = position;
+        queue = queue.then(() => Ajax.call([{methodname: 'mod_lecturevideos_update_progress', args: args}])[0])
+            .then(data => {
+                updateUI(target, data);
+                return data;
+            })
+            .catch(() => null);
     };
 
-    const html5 = (root, track) => {
-        const video =
-            document.createElement('video');
-
-        video.controls = true;
-        video.preload = 'metadata';
-        video.src = root.dataset.src;
-
-        root.querySelector(
-            '[data-region="player"]'
-        ).append(video);
-
-        let maxSeen = track.resume();
-
-        video.addEventListener(
-            'loadedmetadata',
-            () => {
-                track.setDuration(
-                    video.duration
-                );
-
-                if (track.resume() > 0) {
-                    video.currentTime =
-                        Math.min(
-                            track.resume(),
-                            video.duration - 1
-                        );
-                }
-
-                try {
-                    renderTimeline(
-                        root.querySelector(
-                            '[data-region="timeline"]'
-                        ),
-                        JSON.parse(
-                            root.dataset.segments ||
-                            '[]'
-                        ),
-                        video.duration
-                    );
-
-                } catch (e) {
-                }
-            }
-        );
-
-        video.addEventListener(
-            'play',
-            () => track.start(
-                video.currentTime
-            )
-        );
-
-        video.addEventListener(
-            'timeupdate',
-            () => {
-                maxSeen = Math.max(
-                    maxSeen,
-                    video.currentTime
-                );
-
-                track.setRate(
-                    video.playbackRate
-                );
-
-                track.tick(
-                    video.currentTime
-                );
-            }
-        );
-
-        video.addEventListener(
-            'pause',
-            () => track.pause(
-                video.currentTime
-            )
-        );
-
-        video.addEventListener(
-            'ended',
-            () => track.pause(
-                video.duration
-            )
-        );
-
-        video.addEventListener(
-            'seeking',
-            () => {
-                const target = track.seek(
-                    maxSeen,
-                    video.currentTime,
-                    root.dataset.allowseek === '1',
-                    maxSeen
-                );
-
-                if (
-                    Math.abs(
-                        target -
-                        video.currentTime
-                    ) > 1
-                ) {
-                    video.currentTime =
-                        target;
-                }
-            }
-        );
+    /** Send the watched stretch so far (if any) and keep tracking from here. */
+    const flush = () => {
+        if (segStart !== null) {
+            report(segStart, lastTime, lastTime);
+            segStart = video.paused ? null : lastTime;
+        }
     };
 
-    const youtube = (root, track) => {
-        const id = parseYouTubeId(
-            root.dataset.src
-        );
+    const startSession = () => {
+        sessionkey = randomKey();
+        seq = 0;
+        segStart = null;
+        lastSent = 0;
+        lastTime = video.currentTime || 0;
+        maxSeen = frontier(parseSegments(item.dataset.segments));
+    };
 
-        if (!id) {
-            root.querySelector(
-                '[data-region="player"]'
-            ).textContent =
-                'Invalid YouTube URL';
-
+    const load = (target, autoplay) => {
+        if (!target || !target.dataset.src) {
+            // Locked when the page loaded but possibly unlocked now: reload on that video.
+            if (target) {
+                const url = new URL(window.location.href);
+                url.searchParams.set('video', target.dataset.id);
+                window.location.assign(url.toString());
+            }
             return;
         }
-
-        const host =
-            document.createElement('div');
-
-        root.querySelector(
-            '[data-region="player"]'
-        ).append(host);
-
-        const ready = () => new Promise(
-            resolve => {
-                if (
-                    window.YT &&
-                    window.YT.Player
-                ) {
-                    resolve();
-                    return;
-                }
-
-                const prev =
-                    window.onYouTubeIframeAPIReady;
-
-                window.onYouTubeIframeAPIReady =
-                    () => {
-                        if (prev) {
-                            prev();
-                        }
-
-                        resolve();
-                    };
-
-                if (
-                    !document.querySelector(
-                        'script[src*="youtube.com/iframe_api"]'
-                    )
-                ) {
-                    const s =
-                        document.createElement(
-                            'script'
-                        );
-
-                    s.src =
-                        'https://www.youtube.com/iframe_api';
-
-                    document.head.append(s);
-                }
-            }
-        );
-
-        ready().then(() => {
-            let timer = null;
-
-            const p = new window.YT.Player(
-                host,
-                {
-                    videoId: id,
-
-                    events: {
-                        onReady: e => {
-                            track.setDuration(
-                                e.target.getDuration()
-                            );
-
-                            if (
-                                track.resume() > 0
-                            ) {
-                                e.target.seekTo(
-                                    track.resume(),
-                                    true
-                                );
-                            }
-                        },
-
-                        onStateChange: e => {
-                            if (
-                                e.data ===
-                                window.YT.PlayerState.PLAYING
-                            ) {
-                                track.start(
-                                    p.getCurrentTime()
-                                );
-
-                                timer = setInterval(
-                                    () => {
-                                        track.setRate(
-                                            p.getPlaybackRate()
-                                        );
-
-                                        track.tick(
-                                            p.getCurrentTime()
-                                        );
-                                    },
-                                    1000
-                                );
-
-                            } else {
-                                if (timer) {
-                                    clearInterval(
-                                        timer
-                                    );
-
-                                    timer = null;
-                                }
-
-                                if (
-                                    e.data ===
-                                    window.YT.PlayerState.PAUSED ||
-                                    e.data ===
-                                    window.YT.PlayerState.ENDED
-                                ) {
-                                    track.pause(
-                                        p.getCurrentTime()
-                                    );
-                                }
-                            }
-                        }
-                    }
-                }
-            );
-        });
-    };
-
-    const vimeo = (root, track) => {
-        const id = parseVimeoId(
-            root.dataset.src
-        );
-
-        if (!id) {
-            root.querySelector(
-                '[data-region="player"]'
-            ).textContent =
-                'Invalid Vimeo URL';
-
-            return;
-        }
-
-        const frame =
-            document.createElement('iframe');
-
-        frame.src =
-            'https://player.vimeo.com/video/' +
-            id +
-            '?api=1';
-
-        frame.allow =
-            'autoplay; fullscreen; picture-in-picture';
-
-        root.querySelector(
-            '[data-region="player"]'
-        ).append(frame);
-
-        const load = () => new Promise(
-            resolve => {
-                if (
-                    window.Vimeo &&
-                    window.Vimeo.Player
-                ) {
-                    resolve();
-                    return;
-                }
-
-                const s =
-                    document.createElement(
-                        'script'
-                    );
-
-                s.src =
-                    'https://player.vimeo.com/api/player.js';
-
-                s.onload = resolve;
-
-                document.head.append(s);
-            }
-        );
-
-        load().then(() => {
-            const p =
-                new window.Vimeo.Player(
-                    frame
-                );
-
-            p.getDuration().then(d => {
-                track.setDuration(d);
-
-                if (track.resume() > 0) {
-                    p.setCurrentTime(
-                        track.resume()
-                    );
-                }
-            });
-
-            p.on(
-                'play',
-                d => track.start(
-                    d.seconds
-                )
-            );
-
-            p.on(
-                'timeupdate',
-                d => track.tick(
-                    d.seconds
-                )
-            );
-
-            p.on(
-                'pause',
-                d => track.pause(
-                    d.seconds
-                )
-            );
-
-            p.on(
-                'ended',
-                d => track.pause(
-                    d.seconds
-                )
-            );
-
-            p.on(
-                'playbackratechange',
-                d => track.setRate(
-                    d.playbackRate
-                )
-            );
-        });
-    };
-
-    const init = () => {
-        document.querySelectorAll(
-            '.lecturevideos-player'
-        ).forEach(root => {
-
-            const track = sender(root);
-
-            if (
-                root.dataset.source ===
-                'youtube'
-            ) {
-                youtube(root, track);
-
-            } else if (
-                root.dataset.source ===
-                'vimeo'
-            ) {
-                vimeo(root, track);
-
+        flush();
+        item = target;
+        items.forEach(b => {
+            b.classList.toggle('active', b === target);
+            if (b === target) {
+                b.setAttribute('aria-current', 'true');
             } else {
-                html5(root, track);
+                b.removeAttribute('aria-current');
             }
         });
+        if (target.dataset.poster) {
+            video.poster = target.dataset.poster;
+        } else {
+            video.removeAttribute('poster');
+        }
+        video.src = target.dataset.src;
+        root.querySelector('[data-region="title"]').textContent = target.dataset.title;
+        root.querySelector('[data-region="description"]').textContent = target.dataset.description || '';
+        root.querySelector('[data-region="video-percent"]').textContent = Math.round(Number(target.dataset.percent)) + '%';
+        renderTimeline(root.querySelector('[data-region="timeline"]'), [], 0);
+        startSession();
+        try {
+            const url = new URL(window.location.href);
+            url.searchParams.set('video', target.dataset.id);
+            window.history.replaceState(null, '', url.toString());
+        } catch (e) {
+            // Ignore: deep links are a nicety.
+        }
+        if (autoplay) {
+            video.play().catch(() => null);
+        }
     };
 
-    return {
-        init: init
+    video.addEventListener('loadedmetadata', () => {
+        const resume = Number(item.dataset.lastposition || 0);
+        if (resume > 0 && resume < video.duration - 5) {
+            video.currentTime = resume;
+        }
+        lastTime = video.currentTime;
+        renderTimeline(root.querySelector('[data-region="timeline"]'), parseSegments(item.dataset.segments),
+            video.duration);
+    });
+
+    video.addEventListener('play', () => {
+        segStart = video.currentTime;
+        lastTime = video.currentTime;
+        if (seq === 0) {
+            // Opening heartbeat: starts the server-side session clock so the first seconds count.
+            report(segStart, segStart, segStart);
+        }
+    });
+
+    video.addEventListener('timeupdate', () => {
+        if (video.seeking) {
+            return;
+        }
+        lastTime = video.currentTime;
+        maxSeen = Math.max(maxSeen, lastTime);
+        if (segStart !== null && Math.abs(lastTime - lastSent) >= HEARTBEAT) {
+            report(segStart, lastTime, lastTime);
+            segStart = lastTime;
+        }
+    });
+
+    video.addEventListener('pause', () => {
+        if (!video.seeking) {
+            flush();
+        }
+    });
+
+    video.addEventListener('seeking', () => {
+        if (!allowseek && video.currentTime > maxSeen + 3) {
+            video.currentTime = maxSeen;
+            return;
+        }
+        // Keep what was watched before the jump, then continue from the new position.
+        if (segStart !== null && lastTime > segStart) {
+            report(segStart, lastTime, lastTime);
+        }
+        segStart = video.paused ? null : video.currentTime;
+        lastTime = video.currentTime;
+    });
+
+    video.addEventListener('seeked', () => {
+        lastTime = video.currentTime;
+        if (!video.paused) {
+            segStart = video.currentTime;
+        }
+    });
+
+    video.addEventListener('ended', () => {
+        lastTime = video.duration;
+        flush();
+        segStart = null;
+        const next = items[items.indexOf(item) + 1];
+        if (next) {
+            // Give the last report a moment so a sequential playlist can unlock the next video.
+            queue.then(() => load(next, true)).catch(() => null);
+        }
+    });
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
+            flush();
+        }
+    });
+    window.addEventListener('pagehide', flush);
+
+    items.forEach(b => b.addEventListener('click', () => {
+        if (b !== item) {
+            load(b, true);
+            video.scrollIntoView({behavior: 'smooth', block: 'nearest'});
+        }
+    }));
+
+    // Keep the list as tall as the player when they sit side by side.
+    const list = root.querySelector('[data-region="list"]');
+    const fit = () => {
+        list.style.maxHeight = window.matchMedia('(min-width: 992px)').matches
+            ? video.getBoundingClientRect().height + 'px' : '';
     };
-});
+    window.addEventListener('resize', fit);
+    video.addEventListener('loadedmetadata', fit);
+    fit();
+
+    startSession();
+};
