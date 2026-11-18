@@ -226,9 +226,13 @@ export const init = () => {
     video.addEventListener('play', () => {
         segStart = video.currentTime;
         lastTime = video.currentTime;
-        if (seq === 0) {
-            // Opening heartbeat: starts the server-side session clock so the first seconds count.
-            report(segStart, segStart, segStart);
+    });
+
+    // Opening heartbeat once playback really starts (the length is known by then, also right after
+    // switching videos): starts the server-side session clock so the first seconds are credited.
+    video.addEventListener('playing', () => {
+        if (seq === 0 && video.duration) {
+            report(video.currentTime, video.currentTime, video.currentTime);
         }
     });
 
