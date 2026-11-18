@@ -17,27 +17,27 @@
 /**
  * view.php
  *
- * @package   mod_videoplaylist
+ * @package   mod_lecturevideos
  * @copyright 2026 Eduardo Kraus {@link https://eduardokraus.com}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 require('../../config.php');
 
-use mod_videoplaylist\progress_manager;
+use mod_lecturevideos\progress_manager;
 
 $id = required_param('id', PARAM_INT);
 $videoid = optional_param('video', 0, PARAM_INT);
-$cm = get_coursemodule_from_id('videoplaylist', $id, 0, false, MUST_EXIST);
+$cm = get_coursemodule_from_id('lecturevideos', $id, 0, false, MUST_EXIST);
 $course = get_course($cm->course);
-$playlist = $DB->get_record('videoplaylist', ['id' => $cm->instance], '*', MUST_EXIST);
+$playlist = $DB->get_record('lecturevideos', ['id' => $cm->instance], '*', MUST_EXIST);
 require_course_login($course, true, $cm);
 $context = context_module::instance($cm->id);
-require_capability('mod/videoplaylist:view', $context);
-$PAGE->set_url('/mod/videoplaylist/view.php', ['id' => $cm->id]);
+require_capability('mod/lecturevideos:view', $context);
+$PAGE->set_url('/mod/lecturevideos/view.php', ['id' => $cm->id]);
 $PAGE->set_title(format_string($playlist->name));
 $PAGE->set_heading(format_string($course->fullname));
-$PAGE->requires->js_call_amd('mod_videoplaylist/player', 'init');
+$PAGE->requires->js_call_amd('mod_lecturevideos/player', 'init');
 $manager = new progress_manager();
 $videos = $manager->get_videos($playlist->id);
 $items = [];
@@ -51,7 +51,7 @@ foreach ($videos as $video) {
         'id' => $video->id, 'title' => format_string($video->title), 'description' => s($video->description),
         'percent' => round($percent, 2), 'completed' => $completed, 'unlocked' => $unlocked,
         'locked' => !$unlocked, 'notstarted' => !$progress, 'current' => false,
-        'url' => (new moodle_url('/mod/videoplaylist/view.php', ['id' => $cm->id, 'video' => $video->id]))->out(false),
+        'url' => (new moodle_url('/mod/lecturevideos/view.php', ['id' => $cm->id, 'video' => $video->id]))->out(false),
         'minpercent' => (int)$video->minpercent,
     ];
     $items[$video->id] = $item;
@@ -76,15 +76,15 @@ if ($videoid && isset($items[$videoid]) && $items[$videoid]['unlocked']) {
     }
 }
 if ($currentid) {
-    $video = $DB->get_record('videoplaylist_videos', ['id' => $currentid], '*', MUST_EXIST);
+    $video = $DB->get_record('lecturevideos_videos', ['id' => $currentid], '*', MUST_EXIST);
     $progress = $manager->get_progress($video->id, $USER->id);
     $src = '';
     if ($video->source === 'upload') {
-        $files = get_file_storage()->get_area_files($context->id, 'mod_videoplaylist', 'video', $video->id, 'filename', false);
+        $files = get_file_storage()->get_area_files($context->id, 'mod_lecturevideos', 'video', $video->id, 'filename', false);
         if ($files) {
             $file = reset($files);
             $src = moodle_url::make_pluginfile_url($context->id,
-                'mod_videoplaylist', 'video', $video->id, $file->get_filepath(),
+                'mod_lecturevideos', 'video', $video->id, $file->get_filepath(),
                 $file->get_filename())->out(false);
         }
     } else {
@@ -104,17 +104,17 @@ if ($currentid) {
 }
 $overall = $manager->get_overall_percent($playlist->id, $USER->id);
 $data = [
-    'name' => format_string($playlist->name), 'intro' => format_module_intro('videoplaylist', $playlist, $cm->id, false),
+    'name' => format_string($playlist->name), 'intro' => format_module_intro('lecturevideos', $playlist, $cm->id, false),
     'videos' => array_values($items), 'hasvideos' => !empty($items), 'current' => $current,
-    'overallpercent' => $overall, 'manageurl' => (new moodle_url('/mod/videoplaylist/manage.php', ['id' => $cm->id]))->out(false),
-    'reporturl' => (new moodle_url('/mod/videoplaylist/report.php', ['id' => $cm->id]))->out(false),
-    'canmanage' => has_capability('mod/videoplaylist:managevideos', $context),
-    'canreport' => has_capability('mod/videoplaylist:viewreport', $context),
+    'overallpercent' => $overall, 'manageurl' => (new moodle_url('/mod/lecturevideos/manage.php', ['id' => $cm->id]))->out(false),
+    'reporturl' => (new moodle_url('/mod/lecturevideos/report.php', ['id' => $cm->id]))->out(false),
+    'canmanage' => has_capability('mod/lecturevideos:managevideos', $context),
+    'canreport' => has_capability('mod/lecturevideos:viewreport', $context),
 ];
-$event = \mod_videoplaylist\event\course_module_viewed::create(['objectid' => $playlist->id, 'context' => $context]);
+$event = \mod_lecturevideos\event\course_module_viewed::create(['objectid' => $playlist->id, 'context' => $context]);
 $event->add_record_snapshot('course', $course);
 $event->add_record_snapshot('course_modules', $cm);
 $event->trigger();
 echo $OUTPUT->header();
-echo $OUTPUT->render_from_template('mod_videoplaylist/view', $data);
+echo $OUTPUT->render_from_template('mod_lecturevideos/view', $data);
 echo $OUTPUT->footer();

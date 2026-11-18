@@ -15,20 +15,20 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * restore_videoplaylist_activity_task.class.php
+ * restore_lecturevideos_activity_task.class.php
  *
- * @package   mod_videoplaylist
+ * @package   mod_lecturevideos
  * @copyright 2026 Eduardo Kraus {@link https://eduardokraus.com}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die;
-require_once(__DIR__ . '/restore_videoplaylist_stepslib.php');
+require_once(__DIR__ . '/restore_lecturevideos_stepslib.php');
 
 /**
- * Class restore_videoplaylist_activity_task.
+ * Class restore_lecturevideos_activity_task.
  */
-class restore_videoplaylist_activity_task extends restore_activity_task {
+class restore_lecturevideos_activity_task extends restore_activity_task {
     /**
      * Method define_my_settings.
      *
@@ -43,7 +43,7 @@ class restore_videoplaylist_activity_task extends restore_activity_task {
      * @return void Return value.
      */
     protected function define_my_steps(): void {
-        $this->add_step(new restore_videoplaylist_activity_structure_step('videoplaylist_structure', 'videoplaylist.xml'));
+        $this->add_step(new restore_lecturevideos_activity_structure_step('lecturevideos_structure', 'lecturevideos.xml'));
     }
 
     /**

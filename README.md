@@ -1,4 +1,4 @@
-# Video Playlist (`mod_videoplaylist`)
+# Lecture videos (`mod_lecturevideos`)
 
 Moodle activity module containing multiple trackable videos in one activity.
 

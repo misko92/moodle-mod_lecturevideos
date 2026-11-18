@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="mod/videoplaylist/db" VERSION="20260920" COMMENT="XMLDB file for Video Playlist"
+<XMLDB PATH="mod/lecturevideos/db" VERSION="20260920" COMMENT="XMLDB file for Lecture videos"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd">
     <TABLES>
-        <TABLE NAME="videoplaylist" COMMENT="Video Playlist activity settings">
+        <TABLE NAME="lecturevideos" COMMENT="Lecture videos activity settings">
             <FIELDS>
                 <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
                 <FIELD NAME="course" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
@@ -24,7 +24,7 @@
                 <KEY NAME="course" TYPE="foreign" FIELDS="course" REFTABLE="course" REFFIELDS="id"/>
             </KEYS>
         </TABLE>
-        <TABLE NAME="videoplaylist_videos" COMMENT="Videos belonging to a playlist">
+        <TABLE NAME="lecturevideos_videos" COMMENT="Videos belonging to a playlist">
             <FIELDS>
                 <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
                 <FIELD NAME="playlistid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
@@ -40,13 +40,13 @@
             </FIELDS>
             <KEYS>
                 <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
-                <KEY NAME="playlist" TYPE="foreign" FIELDS="playlistid" REFTABLE="videoplaylist" REFFIELDS="id"/>
+                <KEY NAME="playlist" TYPE="foreign" FIELDS="playlistid" REFTABLE="lecturevideos" REFFIELDS="id"/>
             </KEYS>
             <INDEXES>
                 <INDEX NAME="playlist-order" UNIQUE="false" FIELDS="playlistid,sortorder"/>
             </INDEXES>
         </TABLE>
-        <TABLE NAME="videoplaylist_progress" COMMENT="Per-user progress for every video">
+        <TABLE NAME="lecturevideos_progress" COMMENT="Per-user progress for every video">
             <FIELDS>
                 <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
                 <FIELD NAME="playlistid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
@@ -69,8 +69,8 @@
             </FIELDS>
             <KEYS>
                 <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
-                <KEY NAME="playlist" TYPE="foreign" FIELDS="playlistid" REFTABLE="videoplaylist" REFFIELDS="id"/>
-                <KEY NAME="video" TYPE="foreign" FIELDS="videoid" REFTABLE="videoplaylist_videos" REFFIELDS="id"/>
+                <KEY NAME="playlist" TYPE="foreign" FIELDS="playlistid" REFTABLE="lecturevideos" REFFIELDS="id"/>
+                <KEY NAME="video" TYPE="foreign" FIELDS="videoid" REFTABLE="lecturevideos_videos" REFFIELDS="id"/>
                 <KEY NAME="user" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
             </KEYS>
             <INDEXES>
@@ -78,7 +78,7 @@
                 <INDEX NAME="playlist-user" UNIQUE="false" FIELDS="playlistid,userid"/>
             </INDEXES>
         </TABLE>
-        <TABLE NAME="videoplaylist_sessions" COMMENT="Tracking session state used to validate progress updates">
+        <TABLE NAME="lecturevideos_sessions" COMMENT="Tracking session state used to validate progress updates">
             <FIELDS>
                 <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
                 <FIELD NAME="playlistid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
@@ -92,8 +92,8 @@
             </FIELDS>
             <KEYS>
                 <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
-                <KEY NAME="playlist" TYPE="foreign" FIELDS="playlistid" REFTABLE="videoplaylist" REFFIELDS="id"/>
-                <KEY NAME="video" TYPE="foreign" FIELDS="videoid" REFTABLE="videoplaylist_videos" REFFIELDS="id"/>
+                <KEY NAME="playlist" TYPE="foreign" FIELDS="playlistid" REFTABLE="lecturevideos" REFFIELDS="id"/>
+                <KEY NAME="video" TYPE="foreign" FIELDS="videoid" REFTABLE="lecturevideos_videos" REFFIELDS="id"/>
                 <KEY NAME="user" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
             </KEYS>
             <INDEXES>

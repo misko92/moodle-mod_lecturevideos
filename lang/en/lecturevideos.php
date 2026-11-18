@@ -15,9 +15,9 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * videoplaylist.php
+ * lecturevideos.php
  *
- * @package   mod_videoplaylist
+ * @package   mod_lecturevideos
  * @copyright 2026 Eduardo Kraus {@link https://eduardokraus.com}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -38,15 +38,15 @@ $string['invalidtrackingdata'] = 'Invalid video tracking data.';
 $string['invalidurl'] = 'Enter a valid HTTP or HTTPS URL.';
 $string['managevideos'] = 'Manage videos';
 $string['minpercent'] = 'Minimum percentage for this video';
-$string['modulename'] = 'Video Playlist';
+$string['modulename'] = 'Lecture videos';
 $string['modulename_help'] = 'Create one activity containing several trackable videos, each with its own progress and an overall playlist progress.';
-$string['modulenameplural'] = 'Video Playlists';
-$string['noactivities'] = 'There are no Video Playlist activities in this course.';
+$string['modulenameplural'] = 'Lecture videos';
+$string['noactivities'] = 'There are no Lecture videos activities in this course.';
 $string['novideos'] = 'No videos have been added to this playlist yet.';
 $string['overallprogress'] = 'Overall progress';
 $string['playlistsettings'] = 'Playlist settings';
-$string['pluginadministration'] = 'Video Playlist administration';
-$string['pluginname'] = 'Video Playlist';
+$string['pluginadministration'] = 'Lecture videos administration';
+$string['pluginname'] = 'Lecture videos';
 $string['privacy:metadata:progress'] = 'Stores per-video viewing progress.';
 $string['privacy:metadata:progress:lastposition'] = 'Last playback position.';
 $string['privacy:metadata:progress:percent'] = 'Percentage watched.';
@@ -70,12 +70,12 @@ $string['videodeleted'] = 'Video deleted.';
 $string['videodescription'] = 'Description';
 $string['videofile'] = 'Video file';
 $string['videolocked'] = 'This video is still locked because the previous video has not reached its required percentage.';
-$string['videoplaylist:addinstance'] = 'Add a new Video Playlist';
-$string['videoplaylist:managevideos'] = 'Manage playlist videos';
-$string['videoplaylist:resetprogress'] = 'Reset Video Playlist progress';
-$string['videoplaylist:view'] = 'View Video Playlist';
-$string['videoplaylist:viewreport'] = 'View Video Playlist reports';
-$string['videoplaylistname'] = 'Playlist name';
+$string['lecturevideos:addinstance'] = 'Add a new Lecture videos';
+$string['lecturevideos:managevideos'] = 'Manage playlist videos';
+$string['lecturevideos:resetprogress'] = 'Reset Lecture videos progress';
+$string['lecturevideos:view'] = 'View Lecture videos';
+$string['lecturevideos:viewreport'] = 'View Lecture videos reports';
+$string['lecturevideosname'] = 'Playlist name';
 $string['videoprogress'] = 'Video progress';
 $string['videosaved'] = 'Video saved.';
 $string['videosource'] = 'Video source';

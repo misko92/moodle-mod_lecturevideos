@@ -17,15 +17,15 @@
 /**
  * custom_completion.php
  *
- * @package   mod_videoplaylist
+ * @package   mod_lecturevideos
  * @copyright 2026 Eduardo Kraus {@link https://eduardokraus.com}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-namespace mod_videoplaylist\completion;
+namespace mod_lecturevideos\completion;
 
 use core_completion\activity_custom_completion;
-use mod_videoplaylist\progress_manager;
+use mod_lecturevideos\progress_manager;
 
 /**
  * Class custom_completion.
@@ -40,7 +40,7 @@ class custom_completion extends activity_custom_completion {
     public function get_state(string $rule): int {
         global $DB;
         $this->validate_rule($rule);
-        $playlist = $DB->get_record('videoplaylist', ['id' => $this->cm->instance], '*', MUST_EXIST);
+        $playlist = $DB->get_record('lecturevideos', ['id' => $this->cm->instance], '*', MUST_EXIST);
         $percent = (new progress_manager())->get_overall_percent($playlist->id, $this->userid);
         return $percent >= (float)$playlist->completionpercent ? COMPLETION_COMPLETE : COMPLETION_INCOMPLETE;
     }
@@ -61,8 +61,8 @@ class custom_completion extends activity_custom_completion {
      */
     public function get_custom_rule_descriptions(): array {
         global $DB;
-        $playlist = $DB->get_record('videoplaylist', ['id' => $this->cm->instance], '*', MUST_EXIST);
-        return ['completionpercent' => get_string('completiondetail:percent', 'videoplaylist', $playlist->completionpercent)];
+        $playlist = $DB->get_record('lecturevideos', ['id' => $this->cm->instance], '*', MUST_EXIST);
+        return ['completionpercent' => get_string('completiondetail:percent', 'lecturevideos', $playlist->completionpercent)];
     }
 
     /**

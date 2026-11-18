@@ -17,15 +17,15 @@
 /**
  * version.php
  *
- * @package   mod_videoplaylist
+ * @package   mod_lecturevideos
  * @copyright 2026 Eduardo Kraus {@link https://eduardokraus.com}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die;
 
-$plugin->version = 2026101501;
-$plugin->release = '1.0.9';
-$plugin->component = 'mod_videoplaylist';
-$plugin->requires = 2024042200;
-$plugin->maturity = MATURITY_STABLE;
+$plugin->version = 2026111800;
+$plugin->release = '0.1.0';
+$plugin->component = 'mod_lecturevideos';
+$plugin->requires = 2026042000;
+$plugin->maturity = MATURITY_BETA;

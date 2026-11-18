@@ -15,17 +15,17 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * backup_videoplaylist_stepslib.php
+ * backup_lecturevideos_stepslib.php
  *
- * @package   mod_videoplaylist
+ * @package   mod_lecturevideos
  * @copyright 2026 Eduardo Kraus {@link https://eduardokraus.com}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 /**
- * Class backup_videoplaylist_activity_structure_step.
+ * Class backup_lecturevideos_activity_structure_step.
  */
-class backup_videoplaylist_activity_structure_step extends backup_activity_structure_step {
+class backup_lecturevideos_activity_structure_step extends backup_activity_structure_step {
     /**
      * Method define_structure.
      *
@@ -33,7 +33,7 @@ class backup_videoplaylist_activity_structure_step extends backup_activity_struc
      */
     protected function define_structure() {
         $userinfo = $this->get_setting_value('userinfo');
-        $activity = new backup_nested_element('videoplaylist', ['id'],
+        $activity = new backup_nested_element('lecturevideos', ['id'],
             [
                 'name', 'intro', 'introformat', 'sequential', 'allowseek', 'resumeplayback',
                 'completionpercent', 'grade', 'timecreated', 'timemodified',
@@ -51,13 +51,13 @@ class backup_videoplaylist_activity_structure_step extends backup_activity_struc
         $videos->add_child($video);
         $activity->add_child($progresses);
         $progresses->add_child($progress);
-        $activity->set_source_table('videoplaylist', ['id' => backup::VAR_ACTIVITYID]);
-        $video->set_source_table('videoplaylist_videos', ['playlistid' => backup::VAR_PARENTID]);
+        $activity->set_source_table('lecturevideos', ['id' => backup::VAR_ACTIVITYID]);
+        $video->set_source_table('lecturevideos_videos', ['playlistid' => backup::VAR_PARENTID]);
         if ($userinfo) {
-            $progress->set_source_table('videoplaylist_progress', ['playlistid' => backup::VAR_ACTIVITYID]);
+            $progress->set_source_table('lecturevideos_progress', ['playlistid' => backup::VAR_ACTIVITYID]);
         }
         $progress->annotate_ids('user', 'userid');
-        $video->annotate_files('mod_videoplaylist', 'video', 'id');
+        $video->annotate_files('mod_lecturevideos', 'video', 'id');
         return $this->prepare_activity_structure($activity);
     }
 }

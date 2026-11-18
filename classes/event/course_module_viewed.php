@@ -17,12 +17,12 @@
 /**
  * course_module_viewed.php
  *
- * @package   mod_videoplaylist
+ * @package   mod_lecturevideos
  * @copyright 2026 Eduardo Kraus {@link https://eduardokraus.com}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-namespace mod_videoplaylist\event;
+namespace mod_lecturevideos\event;
 
 /**
  * Class course_module_viewed.
@@ -36,7 +36,7 @@ class course_module_viewed extends \core\event\course_module_viewed {
     protected function init(): void {
         $this->data['crud'] = 'r';
         $this->data['edulevel'] = self::LEVEL_PARTICIPATING;
-        $this->data['objecttable'] = 'videoplaylist';
+        $this->data['objecttable'] = 'lecturevideos';
     }
 
     /**
@@ -45,6 +45,6 @@ class course_module_viewed extends \core\event\course_module_viewed {
      * @return array Return value.
      */
     public static function get_objectid_mapping(): array {
-        return ['db' => 'videoplaylist', 'restore' => 'videoplaylist'];
+        return ['db' => 'lecturevideos', 'restore' => 'lecturevideos'];
     }
 }

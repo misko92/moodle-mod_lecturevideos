@@ -17,12 +17,12 @@
 /**
  * update_progress.php
  *
- * @package   mod_videoplaylist
+ * @package   mod_lecturevideos
  * @copyright 2026 Eduardo Kraus {@link https://eduardokraus.com}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-namespace mod_videoplaylist\external;
+namespace mod_lecturevideos\external;
 
 use context_module;
 use core_external\external_api;
@@ -30,7 +30,7 @@ use core_external\external_function_parameters;
 use core_external\external_single_structure;
 use core_external\external_value;
 use invalid_parameter_exception;
-use mod_videoplaylist\progress_manager;
+use mod_lecturevideos\progress_manager;
 
 /**
  * Class update_progress.
@@ -75,21 +75,21 @@ class update_progress extends external_api {
         global $DB, $USER;
         $params = self::validate_parameters(self::execute_parameters(), compact('cmid', 'videoid', 'currentposition',
             'duration', 'segmentstart', 'segmentend', 'playbackrate', 'sequence', 'sessionkey'));
-        $cm = get_coursemodule_from_id('videoplaylist', $params['cmid'], 0, false, MUST_EXIST);
+        $cm = get_coursemodule_from_id('lecturevideos', $params['cmid'], 0, false, MUST_EXIST);
         $context = context_module::instance($cm->id);
         self::validate_context($context);
-        require_capability('mod/videoplaylist:view', $context);
-        if (isguestuser() || !is_enrolled($context, $USER, 'mod/videoplaylist:view', true)) {
-            throw new \required_capability_exception($context, 'mod/videoplaylist:view', 'nopermissions', '');
+        require_capability('mod/lecturevideos:view', $context);
+        if (isguestuser() || !is_enrolled($context, $USER, 'mod/lecturevideos:view', true)) {
+            throw new \required_capability_exception($context, 'mod/lecturevideos:view', 'nopermissions', '');
         }
-        $playlist = $DB->get_record('videoplaylist', ['id' => $cm->instance], '*', MUST_EXIST);
-        $video = $DB->get_record('videoplaylist_videos',
+        $playlist = $DB->get_record('lecturevideos', ['id' => $cm->instance], '*', MUST_EXIST);
+        $video = $DB->get_record('lecturevideos_videos',
             ['id' => $params['videoid'], 'playlistid' => $playlist->id, 'enabled' => 1], '*', MUST_EXIST);
         if ($params['duration'] <= 0 || $params['duration'] > 604800 || $params['currentposition'] < 0 ||
             $params['segmentstart'] < 0 || $params['segmentend'] < $params['segmentstart'] ||
             $params['playbackrate'] < 0.25 || $params['playbackrate'] > 4 || $params['sequence'] < 1 ||
             strlen($params['sessionkey']) < 16) {
-            throw new invalid_parameter_exception(get_string('invalidtrackingdata', 'videoplaylist'));
+            throw new invalid_parameter_exception(get_string('invalidtrackingdata', 'lecturevideos'));
         }
         return (new progress_manager())->update($playlist, $video, $cm, $USER->id, $params);
     }

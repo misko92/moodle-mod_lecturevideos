@@ -17,7 +17,7 @@
 /**
  * mod_form.php
  *
- * @package   mod_videoplaylist
+ * @package   mod_lecturevideos
  * @copyright 2026 Eduardo Kraus {@link https://eduardokraus.com}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -27,9 +27,9 @@ global $CFG;
 require_once($CFG->dirroot . '/course/moodleform_mod.php');
 
 /**
- * Class mod_videoplaylist_mod_form.
+ * Class mod_lecturevideos_mod_form.
  */
-class mod_videoplaylist_mod_form extends moodleform_mod {
+class mod_lecturevideos_mod_form extends moodleform_mod {
     /**
      * Method definition.
      *
@@ -38,18 +38,18 @@ class mod_videoplaylist_mod_form extends moodleform_mod {
     public function definition(): void {
         $mform = $this->_form;
         $mform->addElement('header', 'general', get_string('general', 'form'));
-        $mform->addElement('text', 'name', get_string('videoplaylistname', 'videoplaylist'), ['size' => 64]);
+        $mform->addElement('text', 'name', get_string('lecturevideosname', 'lecturevideos'), ['size' => 64]);
         $mform->setType('name', PARAM_TEXT);
         $mform->addRule('name', null, 'required', null, 'client');
         $this->standard_intro_elements();
-        $mform->addElement('html', '<h3>' . get_string('playlistsettings', 'videoplaylist') . '</h3>');
-        $mform->addElement('selectyesno', 'sequential', get_string('sequential', 'videoplaylist'));
+        $mform->addElement('html', '<h3>' . get_string('playlistsettings', 'lecturevideos') . '</h3>');
+        $mform->addElement('selectyesno', 'sequential', get_string('sequential', 'lecturevideos'));
         $mform->setDefault('sequential', 0);
-        $mform->addElement('selectyesno', 'allowseek', get_string('allowseek', 'videoplaylist'));
+        $mform->addElement('selectyesno', 'allowseek', get_string('allowseek', 'lecturevideos'));
         $mform->setDefault('allowseek', 1);
-        $mform->addElement('select', 'resumeplayback', get_string('resumeplayback', 'videoplaylist'), [
-            1 => get_string('resumeautomatic', 'videoplaylist'),
-            0 => get_string('resumefromstart', 'videoplaylist'),
+        $mform->addElement('select', 'resumeplayback', get_string('resumeplayback', 'lecturevideos'), [
+            1 => get_string('resumeautomatic', 'lecturevideos'),
+            0 => get_string('resumefromstart', 'lecturevideos'),
         ]);
         $mform->setDefault('resumeplayback', 1);
         $this->standard_grading_coursemodule_elements();
@@ -65,8 +65,8 @@ class mod_videoplaylist_mod_form extends moodleform_mod {
      */
     public function add_completion_rules(): array {
         $mform = $this->_form;
-        $field = 'completionpercent_videoplaylist';
-        $mform->addElement('text', $field, get_string('completionpercent', 'videoplaylist'), ['size' => 5]);
+        $field = 'completionpercent_lecturevideos';
+        $mform->addElement('text', $field, get_string('completionpercent', 'lecturevideos'), ['size' => 5]);
         $mform->setType($field, PARAM_INT);
         $mform->setDefault($field, 80);
         $mform->addRule($field, null, 'numeric', null, 'client');
@@ -80,7 +80,7 @@ class mod_videoplaylist_mod_form extends moodleform_mod {
      * @return bool Return value.
      */
     public function completion_rule_enabled($data): bool {
-        return !empty($data['completionpercent_videoplaylist']);
+        return !empty($data['completionpercent_lecturevideos']);
     }
 
     /**
@@ -91,7 +91,7 @@ class mod_videoplaylist_mod_form extends moodleform_mod {
      */
     public function data_preprocessing(&$defaultvalues): void {
         if (array_key_exists('completionpercent', $defaultvalues)) {
-            $defaultvalues['completionpercent_videoplaylist'] = $defaultvalues['completionpercent'];
+            $defaultvalues['completionpercent_lecturevideos'] = $defaultvalues['completionpercent'];
         }
     }
 
@@ -102,9 +102,9 @@ class mod_videoplaylist_mod_form extends moodleform_mod {
      */
     public function get_data() {
         $data = parent::get_data();
-        if ($data && property_exists($data, 'completionpercent_videoplaylist')) {
-            $data->completionpercent = $data->completionpercent_videoplaylist;
-            unset($data->completionpercent_videoplaylist);
+        if ($data && property_exists($data, 'completionpercent_lecturevideos')) {
+            $data->completionpercent = $data->completionpercent_lecturevideos;
+            unset($data->completionpercent_lecturevideos);
         }
         return $data;
     }
@@ -118,9 +118,9 @@ class mod_videoplaylist_mod_form extends moodleform_mod {
      */
     public function validation($data, $files): array {
         $errors = parent::validation($data, $files);
-        if (isset($data['completionpercent_videoplaylist']) &&
-            ((int)$data['completionpercent_videoplaylist'] < 1 || (int)$data['completionpercent_videoplaylist'] > 100)) {
-            $errors['completionpercent_videoplaylist'] = get_string('errorpercent', 'videoplaylist');
+        if (isset($data['completionpercent_lecturevideos']) &&
+            ((int)$data['completionpercent_lecturevideos'] < 1 || (int)$data['completionpercent_lecturevideos'] > 100)) {
+            $errors['completionpercent_lecturevideos'] = get_string('errorpercent', 'lecturevideos');
         }
         return $errors;
     }

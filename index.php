@@ -17,7 +17,7 @@
 /**
  * index.php
  *
- * @package   mod_videoplaylist
+ * @package   mod_lecturevideos
  * @copyright 2026 Eduardo Kraus {@link https://eduardokraus.com}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -26,17 +26,17 @@ require('../../config.php');
 $id = required_param('id', PARAM_INT);
 $course = get_course($id);
 require_course_login($course);
-$PAGE->set_url('/mod/videoplaylist/index.php', ['id' => $id]);
-$PAGE->set_title(get_string('modulenameplural', 'videoplaylist'));
+$PAGE->set_url('/mod/lecturevideos/index.php', ['id' => $id]);
+$PAGE->set_title(get_string('modulenameplural', 'lecturevideos'));
 $PAGE->set_heading(format_string($course->fullname));
-$instances = get_all_instances_in_course('videoplaylist', $course);
+$instances = get_all_instances_in_course('lecturevideos', $course);
 $data = ['items' => []];
 foreach ($instances as $instance) {
     $data['items'][] = [
         'name' => format_string($instance->name),
-        'url' => (new moodle_url('/mod/videoplaylist/view.php', ['id' => $instance->coursemodule]))->out(false),
+        'url' => (new moodle_url('/mod/lecturevideos/view.php', ['id' => $instance->coursemodule]))->out(false),
     ];
 }
 echo $OUTPUT->header();
-echo $OUTPUT->render_from_template('mod_videoplaylist/index', $data);
+echo $OUTPUT->render_from_template('mod_lecturevideos/index', $data);
 echo $OUTPUT->footer();

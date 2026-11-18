@@ -17,12 +17,12 @@
 /**
  * provider.php
  *
- * @package   mod_videoplaylist
+ * @package   mod_lecturevideos
  * @copyright 2026 Eduardo Kraus {@link https://eduardokraus.com}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-namespace mod_videoplaylist\privacy;
+namespace mod_lecturevideos\privacy;
 
 use core_privacy\local\metadata\collection;
 use core_privacy\local\request\approved_contextlist;
@@ -42,7 +42,7 @@ class provider implements metadata_provider, plugin_provider {
      * @return collection Return value.
      */
     public static function get_metadata(collection $collection): collection {
-        $collection->add_database_table('videoplaylist_progress', [
+        $collection->add_database_table('lecturevideos_progress', [
             'userid' => 'privacy:metadata:progress:userid',
             'percent' => 'privacy:metadata:progress:percent',
             'lastposition' => 'privacy:metadata:progress:lastposition',
@@ -62,9 +62,9 @@ class provider implements metadata_provider, plugin_provider {
         $sql = "SELECT DISTINCT ctx.id FROM {context} ctx
                   JOIN {course_modules} cm ON cm.id = ctx.instanceid AND ctx.contextlevel = :contextmodule
                   JOIN {modules} m ON m.id = cm.module AND m.name = :modname
-                  JOIN {videoplaylist_progress} p ON p.playlistid = cm.instance
+                  JOIN {lecturevideos_progress} p ON p.playlistid = cm.instance
                  WHERE p.userid = :userid";
-        $params = ['contextmodule' => CONTEXT_MODULE, 'modname' => 'videoplaylist', 'userid' => $userid];
+        $params = ['contextmodule' => CONTEXT_MODULE, 'modname' => 'lecturevideos', 'userid' => $userid];
         $contextlist = new contextlist();
         $contextlist->add_from_sql($sql, $params);
         return $contextlist;
@@ -79,15 +79,15 @@ class provider implements metadata_provider, plugin_provider {
     public static function export_user_data(approved_contextlist $contextlist): void {
         global $DB;
         foreach ($contextlist->get_contexts() as $context) {
-            $cm = get_coursemodule_from_id('videoplaylist', $context->instanceid, 0, false, IGNORE_MISSING);
+            $cm = get_coursemodule_from_id('lecturevideos', $context->instanceid, 0, false, IGNORE_MISSING);
             if (!$cm) {
                 continue;
             }
-            $records = $DB->get_records('videoplaylist_progress',
+            $records = $DB->get_records('lecturevideos_progress',
                 ['playlistid' => $cm->instance, 'userid' => $contextlist->get_user()->id]);
             if ($records) {
                 writer::with_context($context)->export_data(
-                    [get_string('pluginname', 'videoplaylist')],
+                    [get_string('pluginname', 'lecturevideos')],
                     (object)['progress' => array_values($records)]);
             }
         }
@@ -104,12 +104,12 @@ class provider implements metadata_provider, plugin_provider {
         if (!$context instanceof \context_module) {
             return;
         }
-        $cm = get_coursemodule_from_id('videoplaylist', $context->instanceid, 0, false, IGNORE_MISSING);
+        $cm = get_coursemodule_from_id('lecturevideos', $context->instanceid, 0, false, IGNORE_MISSING);
         if (!$cm) {
             return;
         }
-        $DB->delete_records('videoplaylist_sessions', ['playlistid' => $cm->instance]);
-        $DB->delete_records('videoplaylist_progress', ['playlistid' => $cm->instance]);
+        $DB->delete_records('lecturevideos_sessions', ['playlistid' => $cm->instance]);
+        $DB->delete_records('lecturevideos_progress', ['playlistid' => $cm->instance]);
     }
 
     /**
@@ -121,13 +121,13 @@ class provider implements metadata_provider, plugin_provider {
     public static function delete_data_for_user(approved_contextlist $contextlist): void {
         global $DB;
         foreach ($contextlist->get_contexts() as $context) {
-            $cm = get_coursemodule_from_id('videoplaylist', $context->instanceid, 0, false, IGNORE_MISSING);
+            $cm = get_coursemodule_from_id('lecturevideos', $context->instanceid, 0, false, IGNORE_MISSING);
             if (!$cm) {
                 continue;
             }
             $params = ['playlistid' => $cm->instance, 'userid' => $contextlist->get_user()->id];
-            $DB->delete_records('videoplaylist_sessions', $params);
-            $DB->delete_records('videoplaylist_progress', $params);
+            $DB->delete_records('lecturevideos_sessions', $params);
+            $DB->delete_records('lecturevideos_progress', $params);
         }
     }
 }

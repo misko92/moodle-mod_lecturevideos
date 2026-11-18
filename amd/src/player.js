@@ -16,7 +16,7 @@
 /**
  * player.js
  *
- * @package   mod_videoplaylist
+ * @package   mod_lecturevideos
  * @copyright 2026 Eduardo Kraus {@link https://eduardokraus.com}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -162,7 +162,7 @@ define(['core/ajax'], function(Ajax) {
 
             return Ajax.call([{
                 methodname:
-                    'mod_videoplaylist_update_progress',
+                    'mod_lecturevideos_update_progress',
 
                 args: {
                     cmid: Number(
@@ -601,7 +601,7 @@ define(['core/ajax'], function(Ajax) {
 
     const init = () => {
         document.querySelectorAll(
-            '.videoplaylist-player'
+            '.lecturevideos-player'
         ).forEach(root => {
 
             const track = sender(root);

@@ -17,7 +17,7 @@
 /**
  * services.php
  *
- * @package   mod_videoplaylist
+ * @package   mod_lecturevideos
  * @copyright 2026 Eduardo Kraus {@link https://eduardokraus.com}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -25,11 +25,11 @@
 defined('MOODLE_INTERNAL') || die;
 
 $functions = [
-    'mod_videoplaylist_update_progress' => [
-        'classname' => '\\mod_videoplaylist\\external\\update_progress',
+    'mod_lecturevideos_update_progress' => [
+        'classname' => '\\mod_lecturevideos\\external\\update_progress',
         'methodname' => 'execute',
-        'description' => 'Stores server-validated video playlist progress.',
+        'description' => 'Stores server-validated lecture videos progress.',
         'type' => 'write', 'ajax' => true,
-        'capabilities' => 'mod/videoplaylist:view',
+        'capabilities' => 'mod/lecturevideos:view',
     ],
 ];

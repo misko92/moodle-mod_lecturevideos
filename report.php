@@ -17,32 +17,32 @@
 /**
  * report.php
  *
- * @package   mod_videoplaylist
+ * @package   mod_lecturevideos
  * @copyright 2026 Eduardo Kraus {@link https://eduardokraus.com}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 require('../../config.php');
 
-use mod_videoplaylist\progress_manager;
+use mod_lecturevideos\progress_manager;
 
 $id = required_param('id', PARAM_INT);
-$cm = get_coursemodule_from_id('videoplaylist', $id, 0, false, MUST_EXIST);
+$cm = get_coursemodule_from_id('lecturevideos', $id, 0, false, MUST_EXIST);
 $course = get_course($cm->course);
-$playlist = $DB->get_record('videoplaylist', ['id' => $cm->instance], '*', MUST_EXIST);
+$playlist = $DB->get_record('lecturevideos', ['id' => $cm->instance], '*', MUST_EXIST);
 require_course_login($course, true, $cm);
 $context = context_module::instance($cm->id);
-require_capability('mod/videoplaylist:viewreport', $context);
-$PAGE->set_url('/mod/videoplaylist/report.php', ['id' => $cm->id]);
-$PAGE->set_title(get_string('reporttitle', 'videoplaylist'));
+require_capability('mod/lecturevideos:viewreport', $context);
+$PAGE->set_url('/mod/lecturevideos/report.php', ['id' => $cm->id]);
+$PAGE->set_title(get_string('reporttitle', 'lecturevideos'));
 $PAGE->set_heading(format_string($course->fullname));
 $manager = new progress_manager();
 $videos = $manager->get_videos($playlist->id);
-$students = get_enrolled_users($context, 'mod/videoplaylist:view', 0,
+$students = get_enrolled_users($context, 'mod/lecturevideos:view', 0,
     'u.id,u.firstname,u.lastname,u.email', 'u.lastname,u.firstname');
 $rows = [];
 foreach ($students as $student) {
-    if (has_capability('mod/videoplaylist:viewreport', $context, $student->id)) {
+    if (has_capability('mod/lecturevideos:viewreport', $context, $student->id)) {
         continue;
     }
     $cells = [];
@@ -58,8 +58,8 @@ $data = [
     'name' => format_string($playlist->name),
     'videos' => array_map(static fn($v) => ['title' => format_string($v->title), 'minpercent' => $v->minpercent], $videos),
     'students' => $rows,
-    'backurl' => (new moodle_url('/mod/videoplaylist/view.php', ['id' => $cm->id]))->out(false),
+    'backurl' => (new moodle_url('/mod/lecturevideos/view.php', ['id' => $cm->id]))->out(false),
 ];
 echo $OUTPUT->header();
-echo $OUTPUT->render_from_template('mod_videoplaylist/report', $data);
+echo $OUTPUT->render_from_template('mod_lecturevideos/report', $data);
 echo $OUTPUT->footer();

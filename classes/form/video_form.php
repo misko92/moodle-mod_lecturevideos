@@ -17,12 +17,12 @@
 /**
  * video_form.php
  *
- * @package   mod_videoplaylist
+ * @package   mod_lecturevideos
  * @copyright 2026 Eduardo Kraus {@link https://eduardokraus.com}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-namespace mod_videoplaylist\form;
+namespace mod_lecturevideos\form;
 defined('MOODLE_INTERNAL') || die;
 global $CFG;
 require_once("{$CFG->libdir}/formslib.php");
@@ -42,26 +42,26 @@ class video_form extends \moodleform {
         $mform->setType('cmid', PARAM_INT);
         $mform->addElement('hidden', 'videoid');
         $mform->setType('videoid', PARAM_INT);
-        $mform->addElement('text', 'title', get_string('videotitle', 'videoplaylist'), ['size' => 60]);
+        $mform->addElement('text', 'title', get_string('videotitle', 'lecturevideos'), ['size' => 60]);
         $mform->setType('title', PARAM_TEXT);
         $mform->addRule('title', null, 'required', null, 'client');
-        $mform->addElement('textarea', 'description', get_string('videodescription', 'videoplaylist'), ['rows' => 3, 'cols' => 60]);
+        $mform->addElement('textarea', 'description', get_string('videodescription', 'lecturevideos'), ['rows' => 3, 'cols' => 60]);
         $mform->setType('description', PARAM_TEXT);
-        $mform->addElement('select', 'source', get_string('videosource', 'videoplaylist'), [
-            'upload' => get_string('sourceupload', 'videoplaylist'), 'url' => get_string('sourceurl', 'videoplaylist'),
-            'youtube' => get_string('sourceyoutube', 'videoplaylist'), 'vimeo' => get_string('sourcevimeo', 'videoplaylist'),
+        $mform->addElement('select', 'source', get_string('videosource', 'lecturevideos'), [
+            'upload' => get_string('sourceupload', 'lecturevideos'), 'url' => get_string('sourceurl', 'lecturevideos'),
+            'youtube' => get_string('sourceyoutube', 'lecturevideos'), 'vimeo' => get_string('sourcevimeo', 'lecturevideos'),
         ]);
-        $mform->addElement('url', 'sourceurl', get_string('videourl', 'videoplaylist'), ['size' => 70], ['usefilepicker' => false]);
+        $mform->addElement('url', 'sourceurl', get_string('videourl', 'lecturevideos'), ['size' => 70], ['usefilepicker' => false]);
         $mform->setType('sourceurl', PARAM_URL);
         $mform->hideIf('sourceurl', 'source', 'eq', 'upload');
-        $mform->addElement('filemanager', 'videofile', get_string('videofile', 'videoplaylist'), null, [
+        $mform->addElement('filemanager', 'videofile', get_string('videofile', 'lecturevideos'), null, [
             'subdirs' => 0, 'accepted_types' => ['video'],
         ]);
         $mform->hideIf('videofile', 'source', 'neq', 'upload');
-        $mform->addElement('text', 'minpercent', get_string('minpercent', 'videoplaylist'), ['size' => 5]);
+        $mform->addElement('text', 'minpercent', get_string('minpercent', 'lecturevideos'), ['size' => 5]);
         $mform->setType('minpercent', PARAM_INT);
         $mform->setDefault('minpercent', 80);
-        $mform->addElement('selectyesno', 'enabled', get_string('enabled', 'videoplaylist'));
+        $mform->addElement('selectyesno', 'enabled', get_string('enabled', 'lecturevideos'));
         $mform->setDefault('enabled', 1);
         $this->add_action_buttons();
     }
@@ -76,20 +76,20 @@ class video_form extends \moodleform {
     public function validation($data, $files): array {
         $errors = parent::validation($data, $files);
         if ((int)$data['minpercent'] < 1 || (int)$data['minpercent'] > 100) {
-            $errors['minpercent'] = get_string('errorpercent', 'videoplaylist');
+            $errors['minpercent'] = get_string('errorpercent', 'lecturevideos');
         }
         if ($data['source'] !== 'upload' && empty($data['sourceurl'])) {
             $errors['sourceurl'] = get_string('required');
         }
         if (!empty($data['sourceurl']) && !in_array(parse_url($data['sourceurl'], PHP_URL_SCHEME), ['http', 'https'], true)) {
-            $errors['sourceurl'] = get_string('invalidurl', 'videoplaylist');
+            $errors['sourceurl'] = get_string('invalidurl', 'lecturevideos');
         }
         foreach (['videofile'] as $field) {
             $draftid = (int)($data[$field] ?? 0);
             if ($draftid > 0) {
                 $draftinfo = file_get_draft_area_info($draftid);
                 if ((int)$draftinfo['filecount'] > 1) {
-                    $errors[$field] = get_string('errormaxfiles', 'videoplaylist');
+                    $errors[$field] = get_string('errormaxfiles', 'lecturevideos');
                 }
             }
         }

@@ -17,17 +17,17 @@
 /**
  * Upgrade steps.
  *
- * @package   mod_videoplaylist
+ * @package   mod_lecturevideos
  * @copyright 2026 Eduardo Kraus {@link https://eduardokraus.com}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 /**
- * Upgrade mod_videoplaylist.
+ * Upgrade mod_lecturevideos.
  *
  * @param int $oldversion Previous plugin version.
  * @return bool
  */
-function xmldb_videoplaylist_upgrade(int $oldversion): bool {
+function xmldb_lecturevideos_upgrade(int $oldversion): bool {
     return true;
 }

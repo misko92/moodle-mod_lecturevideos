@@ -17,12 +17,12 @@
 /**
  * progress_manager.php
  *
- * @package   mod_videoplaylist
+ * @package   mod_lecturevideos
  * @copyright 2026 Eduardo Kraus {@link https://eduardokraus.com}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-namespace mod_videoplaylist;
+namespace mod_lecturevideos;
 
 use completion_info;
 use context_module;
@@ -40,7 +40,7 @@ class progress_manager {
      */
     public function get_videos(int $playlistid): array {
         global $DB;
-        return array_values($DB->get_records('videoplaylist_videos',
+        return array_values($DB->get_records('lecturevideos_videos',
             ['playlistid' => $playlistid, 'enabled' => 1], 'sortorder ASC, id ASC'));
     }
 
@@ -53,7 +53,7 @@ class progress_manager {
      */
     public function get_progress(int $videoid, int $userid): ?stdClass {
         global $DB;
-        $record = $DB->get_record('videoplaylist_progress', ['videoid' => $videoid, 'userid' => $userid]);
+        $record = $DB->get_record('lecturevideos_progress', ['videoid' => $videoid, 'userid' => $userid]);
         return $record ?: null;
     }
 
@@ -149,10 +149,10 @@ class progress_manager {
     public function update(stdClass $playlist, stdClass $video, stdClass $cm, int $userid, array $params): array {
         global $DB;
         if (!$this->is_video_unlocked($playlist, $video, $userid)) {
-            throw new \moodle_exception('videolocked', 'videoplaylist');
+            throw new \moodle_exception('videolocked', 'lecturevideos');
         }
         $now = time();
-        $session = $DB->get_record('videoplaylist_sessions', [
+        $session = $DB->get_record('lecturevideos_sessions', [
             'videoid' => $video->id, 'userid' => $userid, 'sessionkey' => $params['sessionkey'],
         ]);
         if (!$session) {
@@ -161,7 +161,7 @@ class progress_manager {
                 'sessionkey' => $params['sessionkey'], 'sequence' => 0,
                 'lastheartbeat' => $now, 'timecreated' => $now, 'timemodified' => $now,
             ];
-            $session->id = $DB->insert_record('videoplaylist_sessions', $session);
+            $session->id = $DB->insert_record('lecturevideos_sessions', $session);
         }
         if ((int)$params['sequence'] <= (int)$session->sequence) {
             return $this->response($playlist, $video, $userid, false, 'oldsequence');
@@ -222,17 +222,17 @@ class progress_manager {
         $progress->completed = $percent >= (float)$video->minpercent ? 1 : 0;
         $progress->timemodified = $now;
         if (!empty($progress->id)) {
-            $DB->update_record('videoplaylist_progress', $progress);
+            $DB->update_record('lecturevideos_progress', $progress);
         } else {
-            $progress->id = $DB->insert_record('videoplaylist_progress', $progress);
+            $progress->id = $DB->insert_record('lecturevideos_progress', $progress);
         }
 
         $session->sequence = (int)$params['sequence'];
         $session->lastheartbeat = $now;
         $session->timemodified = $now;
-        $DB->update_record('videoplaylist_sessions', $session);
+        $DB->update_record('lecturevideos_sessions', $session);
 
-        videoplaylist_update_grades($playlist, $userid, false);
+        lecturevideos_update_grades($playlist, $userid, false);
         $completion = new completion_info(get_course($playlist->course));
         if ($completion->is_enabled($cm)) {
             $completion->update_state($cm, COMPLETION_UNKNOWN, $userid);

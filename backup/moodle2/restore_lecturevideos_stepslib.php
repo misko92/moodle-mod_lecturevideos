@@ -15,76 +15,76 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * restore_videoplaylist_stepslib.php
+ * restore_lecturevideos_stepslib.php
  *
- * @package   mod_videoplaylist
+ * @package   mod_lecturevideos
  * @copyright 2026 Eduardo Kraus {@link https://eduardokraus.com}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 /**
- * Class restore_videoplaylist_activity_structure_step.
+ * Class restore_lecturevideos_activity_structure_step.
  */
-class restore_videoplaylist_activity_structure_step extends restore_activity_structure_step {
+class restore_lecturevideos_activity_structure_step extends restore_activity_structure_step {
     /**
      * Method define_structure.
      *
      * @return array Return value.
      */
     protected function define_structure(): array {
-        $paths = [new restore_path_element('videoplaylist', '/activity/videoplaylist'),
-            new restore_path_element('videoplaylist_video', '/activity/videoplaylist/videos/video')];
+        $paths = [new restore_path_element('lecturevideos', '/activity/lecturevideos'),
+            new restore_path_element('lecturevideos_video', '/activity/lecturevideos/videos/video')];
         if ($this->get_setting_value('userinfo')) {
-            $paths[] = new restore_path_element('videoplaylist_progress', '/activity/videoplaylist/progresses/progress');
+            $paths[] = new restore_path_element('lecturevideos_progress', '/activity/lecturevideos/progresses/progress');
         }
         return $this->prepare_activity_structure($paths);
     }
 
     /**
-     * Method process_videoplaylist.
+     * Method process_lecturevideos.
      *
      * @param array $data Parameter data.
      * @return void Return value.
      */
-    protected function process_videoplaylist(array $data): void {
+    protected function process_lecturevideos(array $data): void {
         global $DB;
         $data = (object)$data;
         $oldid = $data->id;
         $data->course = $this->get_courseid();
-        $data->id = $DB->insert_record('videoplaylist', $data);
+        $data->id = $DB->insert_record('lecturevideos', $data);
         $this->apply_activity_instance($data->id);
-        $this->set_mapping('videoplaylist', $oldid, $data->id, true);
+        $this->set_mapping('lecturevideos', $oldid, $data->id, true);
     }
 
     /**
-     * Method process_videoplaylist_video.
+     * Method process_lecturevideos_video.
      *
      * @param array $data Parameter data.
      * @return void Return value.
      */
-    protected function process_videoplaylist_video(array $data): void {
+    protected function process_lecturevideos_video(array $data): void {
         global $DB;
         $data = (object)$data;
         $oldid = $data->id;
-        $data->playlistid = $this->get_new_parentid('videoplaylist');
-        $data->id = $DB->insert_record('videoplaylist_videos', $data);
-        $this->set_mapping('videoplaylist_video', $oldid, $data->id, true);
+        $data->playlistid = $this->get_new_parentid('lecturevideos');
+        $data->id = $DB->insert_record('lecturevideos_videos', $data);
+        $this->set_mapping('lecturevideos_video', $oldid, $data->id, true);
     }
 
     /**
-     * Method process_videoplaylist_progress.
+     * Method process_lecturevideos_progress.
      *
      * @param array $data Parameter data.
      * @return void Return value.
      */
-    protected function process_videoplaylist_progress(array $data): void {
+    protected function process_lecturevideos_progress(array $data): void {
         global $DB;
         $data = (object)$data;
-        $data->playlistid = $this->get_new_parentid('videoplaylist');
-        $data->videoid = $this->get_mappingid('videoplaylist_video', $data->videoid, 0);
+        $data->playlistid = $this->get_new_parentid('lecturevideos');
+        $data->videoid = $this->get_mappingid('lecturevideos_video', $data->videoid, 0);
         $data->userid = $this->get_mappingid('user', $data->userid, 0);
         if ($data->videoid && $data->userid) {
-            $DB->insert_record('videoplaylist_progress', $data);
+            $DB->insert_record('lecturevideos_progress', $data);
         }
     }
 
@@ -94,6 +94,6 @@ class restore_videoplaylist_activity_structure_step extends restore_activity_str
      * @return void Return value.
      */
     protected function after_execute(): void {
-        $this->add_related_files('mod_videoplaylist', 'video', 'videoplaylist_video');
+        $this->add_related_files('mod_lecturevideos', 'video', 'lecturevideos_video');
     }
 }
