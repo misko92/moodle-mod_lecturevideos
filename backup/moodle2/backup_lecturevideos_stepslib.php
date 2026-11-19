@@ -69,6 +69,7 @@ class backup_lecturevideos_activity_structure_step extends backup_activity_struc
         $activity->annotate_files('mod_lecturevideos', 'intro', null);
         $video->annotate_files('mod_lecturevideos', 'video', 'id');
         $video->annotate_files('mod_lecturevideos', 'poster', 'id');
+        $video->annotate_files('mod_lecturevideos', 'captions', 'id');
         return $this->prepare_activity_structure($activity);
     }
 }

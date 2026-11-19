@@ -170,6 +170,46 @@ export const init = () => {
         maxSeen = frontier(parseSegments(item.dataset.segments));
     };
 
+    // Captions: null = follow each video's default track (the viewer's language); otherwise the
+    // language the viewer picked in the player's CC menu ('' = captions off), kept across videos.
+    let chosenLang = null;
+    let swappingTracks = false;
+    video.textTracks.addEventListener('change', () => {
+        if (swappingTracks) {
+            return;
+        }
+        const showing = Array.from(video.textTracks).find(t => t.mode === 'showing');
+        chosenLang = showing ? showing.language : '';
+    });
+    const setTracks = (target) => {
+        swappingTracks = true;
+        video.querySelectorAll('track').forEach(t => t.remove());
+        let tracks = [];
+        try {
+            tracks = JSON.parse(target.dataset.tracks || '[]');
+        } catch (e) {
+            tracks = [];
+        }
+        tracks.forEach(t => {
+            const el = document.createElement('track');
+            el.kind = 'subtitles';
+            el.src = t.src;
+            el.srclang = t.srclang;
+            el.label = t.label;
+            video.appendChild(el);
+        });
+        Array.from(video.textTracks).forEach(tt => {
+            const show = chosenLang === null
+                ? tracks.some(t => t.srclang === tt.language && t.default)
+                : tt.language === chosenLang;
+            tt.mode = show ? 'showing' : 'disabled';
+        });
+        // Mode changes fire 'change' asynchronously; only later changes come from the viewer.
+        window.setTimeout(() => {
+            swappingTracks = false;
+        }, 100);
+    };
+
     const load = (target, autoplay) => {
         if (!target || !target.dataset.src) {
             // Locked when the page loaded but possibly unlocked now: reload on that video.
@@ -196,6 +236,7 @@ export const init = () => {
             video.removeAttribute('poster');
         }
         video.src = target.dataset.src;
+        setTracks(target);
         root.querySelector('[data-region="title"]').textContent = target.dataset.title;
         root.querySelector('[data-region="description"]').textContent = target.dataset.description || '';
         root.querySelector('[data-region="video-percent"]').textContent = Math.round(Number(target.dataset.percent)) + '%';

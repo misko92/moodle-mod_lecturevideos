@@ -28,6 +28,10 @@ $string['actions'] = 'Acciones';
 $string['addvideo'] = 'Agregar video';
 $string['allowseek'] = 'Permitir adelantar a partes aún no vistas';
 $string['back'] = 'Volver';
+$string['captionfiles'] = 'Subtítulos';
+$string['captionfiles_help'] = 'Archivos de subtítulos WebVTT (.vtt), uno por idioma. Nombre cada archivo según su idioma: **en.vtt** para inglés, **es.vtt** para español (o es_mx.vtt).
+
+Los estudiantes cuyo idioma de Moodle es el español ven los subtítulos en español desde el principio. Cualquiera puede activar, desactivar o cambiar el idioma de los subtítulos con el botón CC del reproductor.';
 $string['complete'] = 'Completado';
 $string['completiondetail:each'] = 'Ver al menos el {$a}% de cada video';
 $string['completiondetail:percent'] = 'Alcanzar al menos un {$a}% de progreso promedio en los videos';
@@ -44,6 +48,7 @@ $string['confirmdeletevideo'] = '¿Eliminar el video "{$a}" y todo el progreso g
 $string['duration'] = 'Duración';
 $string['editvideo'] = 'Editar video';
 $string['enabled'] = 'Activado';
+$string['errorcaptionname'] = '"{$a}": nombre los archivos de subtítulos según su idioma, p. ej. en.vtt o es.vtt.';
 $string['errorpercent'] = 'Introduzca un porcentaje del 1 al 100.';
 $string['invalidtrackingdata'] = 'Datos de seguimiento del video no válidos.';
 $string['lastwatched'] = 'Visto por última vez';

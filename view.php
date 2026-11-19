@@ -48,6 +48,7 @@ foreach ($manager->get_videos($playlist->id) as $i => $video) {
     $progress = $manager->get_progress($video->id, $USER->id);
     $unlocked = $manager->is_video_unlocked($playlist, $video, $USER->id);
     $percent = $progress ? (float)$progress->percent : 0.0;
+    $tracks = $unlocked ? videos::captions($context, $video->id, current_language()) : [];
     $items[$video->id] = [
         'id' => $video->id, 'index' => $i + 1, 'title' => format_string($video->title, true, $plain),
         'description' => (string)$video->description,
@@ -57,6 +58,7 @@ foreach ($manager->get_videos($playlist->id) as $i => $video) {
         'unlocked' => $unlocked, 'locked' => !$unlocked, 'started' => (bool)$progress,
         'src' => $unlocked ? videos::url($context, $video->id, 'video') : '',
         'poster' => videos::url($context, $video->id, 'poster'),
+        'tracks' => $tracks, 'tracksjson' => json_encode($tracks),
         'lastposition' => $progress && $playlist->resumeplayback ? (float)$progress->lastposition : 0,
         'segments' => $progress ? (string)$progress->watchedsegments : '[]',
         'current' => false,

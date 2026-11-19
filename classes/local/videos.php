@@ -31,6 +31,9 @@ class videos {
     /** @var string[] Accepted poster image extensions. */
     public const POSTER_TYPES = ['.jpg', '.jpeg', '.png', '.webp'];
 
+    /** @var string Caption file names: a language code plus .vtt, e.g. en.vtt, es.vtt, es_mx.vtt. */
+    public const CAPTION_NAME = '/^([a-z]{2,3})(_[a-z0-9]+)?\.vtt$/';
+
     /**
      * Add a video record at the end of the playlist.
      *
@@ -122,6 +125,100 @@ class videos {
     }
 
     /**
+     * Store a WebVTT caption file from disk (replacing one for the same language). Used by the CLI loaders.
+     *
+     * @param context_module $context
+     * @param stdClass $video
+     * @param string $path
+     * @param string $lang Language code, e.g. en, es or es_mx.
+     */
+    public static function set_caption_from_path(context_module $context, stdClass $video, string $path, string $lang): void {
+        $filename = $lang . '.vtt';
+        if (!preg_match(self::CAPTION_NAME, $filename)) {
+            throw new \coding_exception('Invalid caption language: ' . $lang);
+        }
+        $fs = get_file_storage();
+        $record = ['contextid' => $context->id, 'component' => 'mod_lecturevideos', 'filearea' => 'captions',
+            'itemid' => $video->id, 'filepath' => '/', 'filename' => $filename];
+        if ($old = $fs->get_file(...array_values($record))) {
+            $old->delete();
+        }
+        $fs->create_file_from_pathname($record, $path);
+    }
+
+    /**
+     * The caption tracks of a video, for the <track> elements of the player.
+     *
+     * The track matching the viewer's language is marked as default (shown straight away), except
+     * for English viewers: like YouTube, English captions are available but start switched off.
+     *
+     * @param context_module $context
+     * @param int $videoid
+     * @param string $userlang The viewer's current language, e.g. en or es_mx.
+     * @return array[] Each: src, srclang, label, default.
+     */
+    public static function captions(context_module $context, int $videoid, string $userlang): array {
+        $files = get_file_storage()->get_area_files($context->id, 'mod_lecturevideos', 'captions', $videoid, 'filename', false);
+        $tracks = [];
+        foreach ($files as $file) {
+            if (!preg_match(self::CAPTION_NAME, $file->get_filename(), $m)) {
+                continue;
+            }
+            $lang = $m[1] . ($m[2] ?? '');
+            $url = moodle_url::make_pluginfile_url(
+                $context->id,
+                'mod_lecturevideos',
+                'captions',
+                $videoid,
+                '/',
+                $file->get_filename()
+            );
+            $tracks[$lang] = [
+                'src' => $url->out(false),
+                'srclang' => str_replace('_', '-', $lang),
+                'label' => self::language_label($m[1]),
+                'default' => false,
+            ];
+        }
+        $userbase = explode('_', $userlang)[0];
+        if ($userbase !== 'en') {
+            // Exact match first (es_mx.vtt for es_mx), else the same base language (es.vtt for es_mx).
+            $pick = isset($tracks[$userlang]) ? $userlang : null;
+            foreach (array_keys($tracks) as $lang) {
+                if ($pick === null && explode('_', $lang)[0] === $userbase) {
+                    $pick = $lang;
+                }
+            }
+            if ($pick !== null) {
+                $tracks[$pick]['default'] = true;
+            }
+        }
+        return array_values($tracks);
+    }
+
+    /**
+     * A language's name in that language, e.g. "English", "Español".
+     *
+     * @param string $code ISO 639 code.
+     * @return string
+     */
+    public static function language_label(string $code): string {
+        // Native names for common languages, so labels don't depend on which language packs are installed.
+        $native = ['en' => 'English', 'es' => 'Español', 'fr' => 'Français', 'de' => 'Deutsch', 'pt' => 'Português',
+            'it' => 'Italiano', 'vi' => 'Tiếng Việt', 'zh' => '中文', 'ko' => '한국어', 'ja' => '日本語', 'ar' => 'العربية',
+            'ru' => 'Русский', 'uk' => 'Українська', 'tl' => 'Tagalog', 'hi' => 'हिन्दी', 'so' => 'Soomaali'];
+        if (isset($native[$code])) {
+            return $native[$code];
+        }
+        $names = get_string_manager()->get_list_of_languages($code);
+        if (empty($names[$code])) {
+            $names = get_string_manager()->get_list_of_languages('en');
+        }
+        $name = trim(explode(';', $names[$code] ?? $code)[0]);
+        return \core_text::strtoupper(\core_text::substr($name, 0, 1)) . \core_text::substr($name, 1);
+    }
+
+    /**
      * Delete a video, its files and all progress for it.
      *
      * @param context_module $context
@@ -132,6 +229,7 @@ class videos {
         $fs = get_file_storage();
         $fs->delete_area_files($context->id, 'mod_lecturevideos', 'video', $video->id);
         $fs->delete_area_files($context->id, 'mod_lecturevideos', 'poster', $video->id);
+        $fs->delete_area_files($context->id, 'mod_lecturevideos', 'captions', $video->id);
         $DB->delete_records('lecturevideos_sessions', ['videoid' => $video->id]);
         $DB->delete_records('lecturevideos_progress', ['videoid' => $video->id]);
         $DB->delete_records('lecturevideos_videos', ['id' => $video->id]);

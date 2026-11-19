@@ -69,6 +69,14 @@ class video_form extends \moodleform {
             ['subdirs' => 0, 'maxfiles' => 1, 'accepted_types' => \mod_lecturevideos\local\videos::POSTER_TYPES]
         );
         $mform->addHelpButton('posterfile', 'posterfile', 'lecturevideos');
+        $mform->addElement(
+            'filemanager',
+            'captionfiles',
+            get_string('captionfiles', 'lecturevideos'),
+            null,
+            ['subdirs' => 0, 'maxfiles' => 10, 'accepted_types' => ['.vtt']]
+        );
+        $mform->addHelpButton('captionfiles', 'captionfiles', 'lecturevideos');
         $mform->addElement('text', 'minpercent', get_string('minpercent', 'lecturevideos'), ['size' => 5]);
         $mform->setType('minpercent', PARAM_INT);
         $mform->setDefault('minpercent', 90);
@@ -93,6 +101,18 @@ class video_form extends \moodleform {
         $info = file_get_draft_area_info((int)($data['videofile'] ?? 0));
         if ((int)$info['filecount'] < 1) {
             $errors['videofile'] = get_string('required');
+        }
+        $captiondraft = (int)($data['captionfiles'] ?? 0);
+        if ($captiondraft) {
+            global $USER;
+            $usercontext = \context_user::instance($USER->id);
+            $drafts = get_file_storage()->get_area_files($usercontext->id, 'user', 'draft', $captiondraft, 'filename', false);
+            foreach ($drafts as $file) {
+                if (!preg_match(\mod_lecturevideos\local\videos::CAPTION_NAME, $file->get_filename())) {
+                    $errors['captionfiles'] = get_string('errorcaptionname', 'lecturevideos', s($file->get_filename()));
+                    break;
+                }
+            }
         }
         return $errors;
     }

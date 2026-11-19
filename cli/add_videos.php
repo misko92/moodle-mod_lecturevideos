@@ -43,7 +43,8 @@ Options:
   --cmid=N          Course module id of the activity (required)
   --dir=PATH        Add every .mp4/.m4v/.mov/.webm in PATH, in natural filename order.
                     Title = filename without extension. A same-named .jpg/.jpeg/.png/.webp
-                    next to a video becomes its preview image.
+                    next to a video becomes its preview image, and same-named
+                    <name>.en.vtt / <name>.es.vtt files become its subtitles.
   --csv=FILE        Instead of --dir: rows of title,videopath[,posterpath] (no header).
   --minpercent=N    'Counts as watched at' for each video (default 90)
   --replace         Delete the activity's existing videos (and their progress) first
@@ -81,7 +82,14 @@ if ($options['csv']) {
                 break;
             }
         }
-        $rows[] = ['title' => basename($base), 'video' => $path, 'poster' => $poster];
+        $captions = [];
+        foreach (glob(str_replace(['[', ']', '*', '?'], ['\\[', '\\]', '\\*', '\\?'], $base) . '.*.vtt') ?: [] as $vtt) {
+            $lang = substr($vtt, strlen($base) + 1, -4);
+            if (preg_match(videos::CAPTION_NAME, $lang . '.vtt')) {
+                $captions[$lang] = $vtt;
+            }
+        }
+        $rows[] = ['title' => basename($base), 'video' => $path, 'poster' => $poster, 'captions' => $captions];
     }
 }
 if (!$rows) {
@@ -102,7 +110,13 @@ if ($options['replace'] && !$options['dry-run']) {
     }
 }
 foreach ($rows as $r) {
-    $line = sprintf('%s  [%s%s]', $r['title'], basename($r['video']), $r['poster'] ? ' + ' . basename($r['poster']) : '');
+    $line = sprintf(
+        '%s  [%s%s%s]',
+        $r['title'],
+        basename($r['video']),
+        $r['poster'] ? ' + ' . basename($r['poster']) : '',
+        empty($r['captions']) ? '' : ' + subtitles ' . implode(', ', array_keys($r['captions']))
+    );
     if ($options['dry-run']) {
         cli_writeln('would add ' . $line);
         continue;
@@ -111,6 +125,9 @@ foreach ($rows as $r) {
     videos::set_file_from_path($context, $video, $r['video'], 'video');
     if ($r['poster'] !== '') {
         videos::set_file_from_path($context, $video, $r['poster'], 'poster');
+    }
+    foreach ($r['captions'] ?? [] as $lang => $vtt) {
+        videos::set_caption_from_path($context, $video, $vtt, $lang);
     }
     cli_writeln(sprintf('added %s (%s)', $line, videos::format_duration((float)$video->duration) ?: 'length unknown'));
 }

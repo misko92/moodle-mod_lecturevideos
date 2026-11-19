@@ -137,15 +137,15 @@ function mod_lecturevideos_pluginfile(
     array $options = []
 ): bool {
     global $DB, $USER;
-    if ($context->contextlevel !== CONTEXT_MODULE || !in_array($filearea, ['video', 'poster'], true)) {
+    if ($context->contextlevel !== CONTEXT_MODULE || !in_array($filearea, ['video', 'poster', 'captions'], true)) {
         return false;
     }
     require_login($course, true, $cm);
     require_capability('mod/lecturevideos:view', $context);
     $videoid = (int)array_shift($args);
     $video = $DB->get_record('lecturevideos_videos', ['id' => $videoid, 'playlistid' => $cm->instance], '*', MUST_EXIST);
-    if ($filearea === 'video' && !has_capability('mod/lecturevideos:managevideos', $context)) {
-        // Students only get enabled videos they have unlocked.
+    if ($filearea !== 'poster' && !has_capability('mod/lecturevideos:managevideos', $context)) {
+        // Students only get enabled videos (and their captions) they have unlocked.
         $playlist = $DB->get_record('lecturevideos', ['id' => $cm->instance], '*', MUST_EXIST);
         if (
             empty($video->enabled) ||
@@ -173,7 +173,11 @@ function mod_lecturevideos_pluginfile(
  * @return array The available file areas.
  */
 function lecturevideos_get_file_areas($course, $cm, $context): array {
-    return ['video' => get_string('videofile', 'lecturevideos'), 'poster' => get_string('posterfile', 'lecturevideos')];
+    return [
+        'video' => get_string('videofile', 'lecturevideos'),
+        'poster' => get_string('posterfile', 'lecturevideos'),
+        'captions' => get_string('captionfiles', 'lecturevideos'),
+    ];
 }
 
 /**

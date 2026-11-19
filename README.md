@@ -27,6 +27,16 @@ Adds every `.mp4/.m4v/.mov/.webm` in the folder in natural filename order, title
 `.jpg/.png/.webp` becomes the video's preview image. `--csv` takes `title,videopath[,posterpath]` rows instead; `-n`
 does a dry run.
 
+## Subtitles
+
+Each video can have WebVTT subtitle files, one per language, named after the language: `en.vtt`, `es.vtt`, `es_mx.vtt`, and so on. Upload them in the video's settings, or in bulk:
+
+    php mod/lecturevideos/cli/add_captions.php --cmid=123 --dir=/path/to/captions
+
+`add_captions.php` matches files to videos by the stored video file name (`1.01 History of the Atom.mp4` → `1.01 History of the Atom.en.vtt`, `1.01 History of the Atom.es.vtt`). `add_videos.php --dir` picks up `<name>.<lang>.vtt` files next to the videos as well.
+
+Viewers get the subtitles in their own Moodle language switched on automatically (e.g. `es.vtt` for Spanish or Mexican Spanish users). English captions are available but start switched off. The player's CC button switches language or turns subtitles off, and that choice carries over to the next video.
+
 ## Requirements
 
 Moodle 5.2 or 5.3.

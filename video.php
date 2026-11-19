@@ -44,16 +44,21 @@ $form = new \mod_lecturevideos\form\video_form();
 $fileopts = ['subdirs' => 0, 'maxfiles' => 1];
 $videodraft = file_get_submitted_draft_itemid('videofile');
 $posterdraft = file_get_submitted_draft_itemid('posterfile');
+$captiondraft = file_get_submitted_draft_itemid('captionfiles');
+$captionopts = ['subdirs' => 0, 'maxfiles' => 10];
 if ($video) {
     file_prepare_draft_area($videodraft, $context->id, 'mod_lecturevideos', 'video', $video->id, $fileopts);
     file_prepare_draft_area($posterdraft, $context->id, 'mod_lecturevideos', 'poster', $video->id, $fileopts);
+    file_prepare_draft_area($captiondraft, $context->id, 'mod_lecturevideos', 'captions', $video->id, $captionopts);
     $form->set_data((object)['cmid' => $cm->id, 'videoid' => $video->id, 'title' => $video->title,
         'description' => $video->description, 'minpercent' => $video->minpercent, 'enabled' => $video->enabled,
-        'videofile' => $videodraft, 'posterfile' => $posterdraft]);
+        'videofile' => $videodraft, 'posterfile' => $posterdraft, 'captionfiles' => $captiondraft]);
 } else {
     file_prepare_draft_area($videodraft, null, null, null, null, $fileopts);
     file_prepare_draft_area($posterdraft, null, null, null, null, $fileopts);
-    $form->set_data((object)['cmid' => $cm->id, 'videoid' => 0, 'videofile' => $videodraft, 'posterfile' => $posterdraft]);
+    file_prepare_draft_area($captiondraft, null, null, null, null, $captionopts);
+    $form->set_data((object)['cmid' => $cm->id, 'videoid' => 0, 'videofile' => $videodraft, 'posterfile' => $posterdraft,
+        'captionfiles' => $captiondraft]);
 }
 if ($form->is_cancelled()) {
     redirect(new moodle_url('/mod/lecturevideos/manage.php', ['id' => $cm->id]));
@@ -77,6 +82,7 @@ if ($data = $form->get_data()) {
     }
     file_save_draft_area_files($data->videofile, $context->id, 'mod_lecturevideos', 'video', $video->id, $fileopts);
     file_save_draft_area_files($data->posterfile, $context->id, 'mod_lecturevideos', 'poster', $video->id, $fileopts);
+    file_save_draft_area_files($data->captionfiles, $context->id, 'mod_lecturevideos', 'captions', $video->id, $captionopts);
     \mod_lecturevideos\local\videos::refresh_duration($context, $video);
     redirect(new moodle_url('/mod/lecturevideos/manage.php', ['id' => $cm->id]), get_string('videosaved', 'lecturevideos'));
 }
