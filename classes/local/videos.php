@@ -174,7 +174,8 @@ class videos {
                 $file->get_filename()
             );
             $tracks[$lang] = [
-                'src' => $url->out(false),
+                // The file's time in the URL, so browsers fetch a corrected file instead of a cached one.
+                'src' => $url->out(false) . '?v=' . $file->get_timemodified(),
                 'srclang' => str_replace('_', '-', $lang),
                 'label' => self::language_label($m[1]),
                 'default' => false,
