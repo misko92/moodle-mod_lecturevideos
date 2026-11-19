@@ -170,6 +170,25 @@ export const init = () => {
         maxSeen = frontier(parseSegments(item.dataset.segments));
     };
 
+    // Our subtitle files ask for the TOP of the picture (cue setting line:0). Apple's WebKit (Safari, and every
+    // browser on iPad/iPhone) shows that correctly; Chromium on macOS draws top cues above the picture, out of
+    // sight. Outside WebKit, move the cues back to the default bottom line once the file has loaded.
+    const ua = navigator.userAgent;
+    const topCuesOk = /AppleWebKit/.test(ua) && !/Chrome\/|Chromium\/|Edg\/|OPR\//.test(ua);
+    const placeCues = (el) => {
+        if (topCuesOk) {
+            return;
+        }
+        const apply = () => Array.from(el.track.cues || []).forEach(cue => {
+            cue.line = 'auto';
+        });
+        if (el.readyState === 2) {
+            apply();
+        }
+        el.addEventListener('load', apply);
+    };
+    video.querySelectorAll('track').forEach(placeCues);
+
     // Captions: null = follow each video's default track (the viewer's language); otherwise the
     // language the viewer picked in the player's CC menu ('' = captions off), kept across videos.
     let chosenLang = null;
@@ -196,6 +215,7 @@ export const init = () => {
             el.src = t.src;
             el.srclang = t.srclang;
             el.label = t.label;
+            placeCues(el);
             video.appendChild(el);
         });
         Array.from(video.textTracks).forEach(tt => {
