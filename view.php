@@ -35,6 +35,8 @@ $course = get_course($cm->course);
 $playlist = $DB->get_record('lecturevideos', ['id' => $cm->instance], '*', MUST_EXIST);
 require_course_login($course, true, $cm);
 $context = context_module::instance($cm->id);
+// Titles go into Mustache, which escapes them itself.
+$plain = ['context' => $context, 'escape' => false];
 require_capability('mod/lecturevideos:view', $context);
 $PAGE->set_url('/mod/lecturevideos/view.php', ['id' => $cm->id]);
 $PAGE->set_title(format_string($playlist->name));
@@ -47,7 +49,7 @@ foreach ($manager->get_videos($playlist->id) as $i => $video) {
     $unlocked = $manager->is_video_unlocked($playlist, $video, $USER->id);
     $percent = $progress ? (float)$progress->percent : 0.0;
     $items[$video->id] = [
-        'id' => $video->id, 'index' => $i + 1, 'title' => format_string($video->title),
+        'id' => $video->id, 'index' => $i + 1, 'title' => format_string($video->title, true, $plain),
         'description' => (string)$video->description,
         'duration' => videos::format_duration((float)$video->duration),
         'percent' => round($percent), 'percentexact' => round($percent, 2),

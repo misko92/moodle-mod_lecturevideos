@@ -35,6 +35,8 @@ $course = get_course($cm->course);
 $playlist = $DB->get_record('lecturevideos', ['id' => $cm->instance], '*', MUST_EXIST);
 require_course_login($course, true, $cm);
 $context = context_module::instance($cm->id);
+// Titles go into Mustache, which escapes them itself.
+$plain = ['context' => $context, 'escape' => false];
 require_capability('mod/lecturevideos:viewreport', $context);
 $PAGE->set_url('/mod/lecturevideos/report.php', ['id' => $cm->id]);
 $PAGE->set_title(get_string('reporttitle', 'lecturevideos'));
@@ -86,7 +88,7 @@ foreach ($students as $student) {
         $done = $percent >= (float)$video->minpercent;
         $watchedcount += $done ? 1 : 0;
         $cells[] = [
-            'title' => format_string($video->title), 'percent' => round($percent), 'completed' => $done,
+            'title' => format_string($video->title, true, $plain), 'percent' => round($percent), 'completed' => $done,
             'started' => (bool)$p, 'segments' => $segments,
             'watchtime' => $p ? videos::format_duration((float)$p->totalwatchtime) : '',
             'length' => videos::format_duration($duration),
@@ -109,7 +111,7 @@ foreach ($students as $student) {
 }
 
 $data = [
-    'name' => format_string($playlist->name),
+    'name' => format_string($playlist->name, true, $plain),
     'students' => $rows, 'hasstudents' => !empty($rows),
     'trackcompletion' => $trackcompletion,
     'summary' => get_string(

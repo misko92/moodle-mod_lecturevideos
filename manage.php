@@ -31,6 +31,8 @@ $course = get_course($cm->course);
 $playlist = $DB->get_record('lecturevideos', ['id' => $cm->instance], '*', MUST_EXIST);
 require_course_login($course, true, $cm);
 $context = context_module::instance($cm->id);
+// Titles go into Mustache, which escapes them itself.
+$plain = ['context' => $context, 'escape' => false];
 require_capability('mod/lecturevideos:managevideos', $context);
 $PAGE->set_url('/mod/lecturevideos/manage.php', ['id' => $cm->id]);
 $PAGE->set_title(get_string('managevideos', 'lecturevideos'));
@@ -80,14 +82,14 @@ if (in_array($action, ['up', 'down'], true) && $videoid && confirm_sesskey()) {
 }
 $videos = array_values($DB->get_records('lecturevideos_videos', ['playlistid' => $playlist->id], 'sortorder ASC, id ASC'));
 $data = [
-    'name' => format_string($playlist->name),
+    'name' => format_string($playlist->name, true, $plain),
     'addurl' => (new moodle_url('/mod/lecturevideos/video.php', ['id' => $cm->id]))->out(false),
     'backurl' => (new moodle_url('/mod/lecturevideos/view.php', ['id' => $cm->id]))->out(false),
     'videos' => [],
 ];
 foreach ($videos as $video) {
     $data['videos'][] = [
-        'title' => format_string($video->title),
+        'title' => format_string($video->title, true, $plain),
         'duration' => \mod_lecturevideos\local\videos::format_duration((float)$video->duration),
         'minpercent' => $video->minpercent, 'enabled' => $video->enabled,
         'editurl' => (new moodle_url(

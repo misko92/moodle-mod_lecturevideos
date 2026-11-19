@@ -33,7 +33,11 @@ $instances = get_all_instances_in_course('lecturevideos', $course);
 $data = ['items' => []];
 foreach ($instances as $instance) {
     $data['items'][] = [
-        'name' => format_string($instance->name),
+        'name' => format_string(
+            $instance->name,
+            true,
+            ['context' => context_module::instance($instance->coursemodule), 'escape' => false]
+        ),
         'url' => (new moodle_url('/mod/lecturevideos/view.php', ['id' => $instance->coursemodule]))->out(false),
     ];
 }
