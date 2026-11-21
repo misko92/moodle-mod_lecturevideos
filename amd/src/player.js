@@ -75,6 +75,25 @@ const renderTimeline = (el, segments, duration) => {
     });
 };
 
+/**
+ * Read a start time from the page URL (?t=), e.g. a "review this" link from a quiz question.
+ * Accepts seconds (307), a clock time (5:07, 1:02:03) or YouTube style (5m07s, 90s).
+ *
+ * @param {string|null} value the t parameter
+ * @returns {number} seconds, 0 when missing or unreadable
+ */
+const parseStart = value => {
+    const text = String(value || '').trim();
+    if (/^\d+(\.\d+)?$/.test(text)) {
+        return Number(text);
+    }
+    if (/^\d+(:\d{1,2}){1,2}$/.test(text)) {
+        return text.split(':').reduce((sum, part) => sum * 60 + Number(part), 0);
+    }
+    const m = text.match(/^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?$/);
+    return m && text ? Number(m[1] || 0) * 3600 + Number(m[2] || 0) * 60 + Number(m[3] || 0) : 0;
+};
+
 export const init = () => {
     const root = document.querySelector('[data-region="lecturevideos"]');
     const video = root ? root.querySelector('video.lv-video') : null;
@@ -85,6 +104,17 @@ export const init = () => {
     const allowseek = root.dataset.allowseek === '1';
     const items = Array.from(root.querySelectorAll('[data-region="item"]'));
     let item = items.find(b => b.classList.contains('active'));
+    // A ?t= start time applies once, to the video the page opened on (only if that is the one the link asked for).
+    let startAt = 0;
+    try {
+        const params = new URL(window.location.href).searchParams;
+        const asked = params.get('video');
+        if (item && (!asked || asked === item.dataset.id)) {
+            startAt = parseStart(params.get('t'));
+        }
+    } catch (e) {
+        startAt = 0;
+    }
     let completedText = '';
     getString('statuscompleted', 'mod_lecturevideos').then(s => {
         completedText = s;
@@ -241,6 +271,7 @@ export const init = () => {
             return;
         }
         flush();
+        startAt = 0;
         item = target;
         items.forEach(b => {
             b.classList.toggle('active', b === target);
@@ -265,6 +296,7 @@ export const init = () => {
         try {
             const url = new URL(window.location.href);
             url.searchParams.set('video', target.dataset.id);
+            url.searchParams.delete('t');
             window.history.replaceState(null, '', url.toString());
         } catch (e) {
             // Ignore: deep links are a nicety.
@@ -276,9 +308,13 @@ export const init = () => {
 
     video.addEventListener('loadedmetadata', () => {
         const resume = Number(item.dataset.lastposition || 0);
-        if (resume > 0 && resume < video.duration - 5) {
+        if (startAt > 0 && startAt < video.duration) {
+            // Without free seeking, the seeking handler still holds this to what the student has watched.
+            video.currentTime = startAt;
+        } else if (resume > 0 && resume < video.duration - 5) {
             video.currentTime = resume;
         }
+        startAt = 0;
         lastTime = video.currentTime;
         renderTimeline(root.querySelector('[data-region="timeline"]'), parseSegments(item.dataset.segments),
             video.duration);
