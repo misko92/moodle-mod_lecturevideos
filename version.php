@@ -24,8 +24,8 @@
 
 defined('MOODLE_INTERNAL') || die;
 
-$plugin->version = 2026111902;
-$plugin->release = '0.3.1';
+$plugin->version = 2026112100;
+$plugin->release = '0.4.0';
 $plugin->component = 'mod_lecturevideos';
 $plugin->requires = 2026042000;
 $plugin->maturity = MATURITY_BETA;

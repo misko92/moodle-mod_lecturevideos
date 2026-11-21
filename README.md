@@ -37,6 +37,24 @@ Each video can have WebVTT subtitle files, one per language, named after the lan
 
 Viewers get the subtitles in their own Moodle language switched on automatically (e.g. `es.vtt` for Spanish or Mexican Spanish users). English captions are available but start switched off. The player's CC button switches language or turns subtitles off, and that choice carries over to the next video.
 
+## Links to a moment in a video
+
+Add `&t=` to a video link to start there: `view.php?id=12&video=34&t=5:07` (seconds, `m:ss`,
+`h:mm:ss` or `5m07s` all work). If the activity doesn't allow free seeking, students still can't
+jump past what they have watched.
+
+For links that must work on more than one site (for example in quiz question feedback that is
+exported from one site and imported into another), give the activity an **ID number** in its
+settings and link through `goto.php`, which finds the activity by ID number and the video by the
+start of its title:
+
+```
+/mod/lecturevideos/goto.php?cm=lv-ap-31&v=31.02&t=5:07
+```
+
+opens the video whose title starts with "31.02" in the activity with ID number `lv-ap-31`, at 5:07,
+in the first such activity the student can open.
+
 ## Requirements
 
 Moodle 5.2 or 5.3.
