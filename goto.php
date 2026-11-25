@@ -36,16 +36,28 @@ require_login(null, false);
 $PAGE->set_url('/mod/lecturevideos/goto.php', ['cm' => $targets[0][0]]);
 $PAGE->set_context(context_system::instance());
 
-$url = \mod_lecturevideos\local\review_link::resolve_first($targets);
-if ($url) {
-    redirect($url);
+$choices = \mod_lecturevideos\local\review_link::resolve_all($targets);
+if (count($choices) === 1) {
+    redirect($choices[0]['url']);
 }
 
-// None of the destinations is open to this user (e.g. a question shared by two courses): say so politely.
 $PAGE->set_pagelayout('standard');
 $PAGE->set_title(get_string('modulename', 'mod_lecturevideos'));
 echo $OUTPUT->header();
-echo $OUTPUT->notification(get_string('gotonotfound', 'mod_lecturevideos'), \core\output\notification::NOTIFY_INFO);
+if ($choices) {
+    // Several destinations are open to this user (a teacher sees every course): let them pick.
+    echo $OUTPUT->heading(get_string('gotochoose', 'mod_lecturevideos'));
+    $items = [];
+    foreach ($choices as $c) {
+        $label = $c['course'] . ': ' . $c['activity'] . ($c['video'] !== '' ? ' › ' . $c['video'] : '') .
+            ($c['start'] !== '' ? ' (' . $c['start'] . ')' : '');
+        $items[] = html_writer::link($c['url'], $label); // The parts are already formatted (escaped) by format_string().
+    }
+    echo html_writer::alist($items);
+} else {
+    // None of the destinations is open to this user (e.g. a question shared by two courses): say so politely.
+    echo $OUTPUT->notification(get_string('gotonotfound', 'mod_lecturevideos'), \core\output\notification::NOTIFY_INFO);
+}
 $back = get_local_referer(false);
 echo $OUTPUT->continue_button($back ? new moodle_url($back) : new moodle_url('/my/'));
 echo $OUTPUT->footer();

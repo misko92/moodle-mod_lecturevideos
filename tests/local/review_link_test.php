@@ -103,6 +103,25 @@ final class review_link_test extends \advanced_testcase {
         $this->assertNull(review_link::resolve_first([]));
     }
 
+    public function test_resolve_all_lists_every_destination_a_teacher_can_open(): void {
+        $this->resetAfterTest();
+        $ap = $this->getDataGenerator()->create_course(['fullname' => 'AP & more']);
+        $chem = $this->getDataGenerator()->create_course();
+        $this->make_activity($ap, 'lv-ap-31');
+        $this->make_activity($chem, 'lv-chem-10');
+        $targets = [['lv-ap-31', '31.02', '5:07'], ['lv-chem-10', '31.01', '1:00']];
+
+        $this->setAdminUser();
+        $all = review_link::resolve_all($targets);
+        $this->assertCount(2, $all);
+        $this->assertSame('AP &amp; more', $all[0]['course']);
+        $this->assertSame('31.02 Sample Calculations Part 1', $all[0]['video']);
+        $this->assertSame('1:00', $all[1]['start']);
+
+        $this->setUser($this->getDataGenerator()->create_and_enrol($chem, 'student'));
+        $this->assertCount(1, review_link::resolve_all($targets));
+    }
+
     public function test_clean_start(): void {
         $this->assertSame('307', review_link::clean_start(' 307 '));
         $this->assertSame('5m07s', review_link::clean_start('5m07s'));

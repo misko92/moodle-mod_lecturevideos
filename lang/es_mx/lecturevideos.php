@@ -50,6 +50,7 @@ $string['editvideo'] = 'Editar video';
 $string['enabled'] = 'Activado';
 $string['errorcaptionname'] = '"{$a}": nombre los archivos de subtítulos según su idioma, p. ej. en.vtt o es.vtt.';
 $string['errorpercent'] = 'Introduzca un porcentaje del 1 al 100.';
+$string['gotochoose'] = '¿Qué video?';
 $string['gotonotfound'] = 'Este video todavía no forma parte de su curso. Pregunte a su profesor si lo necesita.';
 $string['invalidtrackingdata'] = 'Datos de seguimiento del video no válidos.';
 $string['lastwatched'] = 'Visto por última vez';

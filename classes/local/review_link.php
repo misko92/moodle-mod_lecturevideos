@@ -73,6 +73,34 @@ class review_link {
     }
 
     /**
+     * Every destination the current user can open (a teacher or admin may see several), with labels for a chooser.
+     *
+     * @param array $targets list of [idnumber, title, start]
+     * @return array list of ['url' => moodle_url, 'course' => course name, 'activity' => activity name,
+     *     'video' => video title, 'start' => time]
+     */
+    public static function resolve_all(array $targets): array {
+        global $DB;
+        $out = [];
+        foreach ($targets as [$idnumber, $title, $start]) {
+            $url = self::resolve((string)$idnumber, (string)$title, (string)$start);
+            if (!$url) {
+                continue;
+            }
+            $cm = get_coursemodule_from_id('lecturevideos', $url->param('id'), 0, false, MUST_EXIST);
+            $video = $url->param('video') ? $DB->get_field('lecturevideos_videos', 'title', ['id' => $url->param('video')]) : '';
+            $out[] = [
+                'url' => $url,
+                'course' => format_string(get_course($cm->course)->fullname),
+                'activity' => format_string($cm->name),
+                'video' => format_string((string)$video),
+                'start' => (string)$url->param('t'),
+            ];
+        }
+        return $out;
+    }
+
+    /**
      * Find where a link should go for the current user.
      *
      * @param string $idnumber the activity's ID number, e.g. lv-ap-31
