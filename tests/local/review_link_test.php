@@ -82,6 +82,27 @@ final class review_link_test extends \advanced_testcase {
         $this->assertNotEmpty($hidden->id);
     }
 
+    public function test_resolve_first_uses_the_destination_the_user_can_open(): void {
+        $this->resetAfterTest();
+        $ap = $this->getDataGenerator()->create_course();
+        $chem = $this->getDataGenerator()->create_course();
+        [$apcm] = $this->make_activity($ap, 'lv-ap-31');
+        [$chemcm] = $this->make_activity($chem, 'lv-chem-10');
+        $targets = [['lv-ap-31', '31.02', '5:07'], ['lv-chem-10', '31.01', '1:00']];
+
+        $this->setUser($this->getDataGenerator()->create_and_enrol($chem, 'student'));
+        $url = review_link::resolve_first($targets);
+        $this->assertSame((string)$chemcm->id, $url->param('id'));
+        $this->assertSame('1:00', $url->param('t'));
+
+        $this->setUser($this->getDataGenerator()->create_and_enrol($ap, 'student'));
+        $this->assertSame((string)$apcm->id, review_link::resolve_first($targets)->param('id'));
+
+        $this->setUser($this->getDataGenerator()->create_user());
+        $this->assertNull(review_link::resolve_first($targets));
+        $this->assertNull(review_link::resolve_first([]));
+    }
+
     public function test_clean_start(): void {
         $this->assertSame('307', review_link::clean_start(' 307 '));
         $this->assertSame('5m07s', review_link::clean_start('5m07s'));

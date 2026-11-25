@@ -17,7 +17,7 @@
 /**
  * Site-independent link to a moment in a lecture video, e.g. from a quiz question's feedback.
  *
- * goto.php?cm=<activity ID number>&v=<start of the video title>&t=<start time>, e.g.
+ * goto.php?cm=<activity ID number>&v=<start of the video title>&t=<start time>[&cm2=…&v2=…&t2=…][&cm3=…], e.g.
  * goto.php?cm=lv-ap-31&v=31.02&t=5:07 — see \mod_lecturevideos\local\review_link.
  *
  * @package    mod_lecturevideos
@@ -27,16 +27,25 @@
 
 require('../../config.php');
 
-$idnumber = required_param('cm', PARAM_ALPHANUMEXT);
-$title = optional_param('v', '', PARAM_TEXT);
-$start = optional_param('t', '', PARAM_RAW_TRIMMED);
+$targets = \mod_lecturevideos\local\review_link::targets_from_request();
+if (!$targets) {
+    required_param('cm', PARAM_ALPHANUMEXT);
+}
 
 require_login(null, false);
-$PAGE->set_url('/mod/lecturevideos/goto.php', ['cm' => $idnumber]);
+$PAGE->set_url('/mod/lecturevideos/goto.php', ['cm' => $targets[0][0]]);
 $PAGE->set_context(context_system::instance());
 
-$url = \mod_lecturevideos\local\review_link::resolve($idnumber, $title, $start);
-if (!$url) {
-    throw new moodle_exception('gotonotfound', 'mod_lecturevideos');
+$url = \mod_lecturevideos\local\review_link::resolve_first($targets);
+if ($url) {
+    redirect($url);
 }
-redirect($url);
+
+// None of the destinations is open to this user (e.g. a question shared by two courses): say so politely.
+$PAGE->set_pagelayout('standard');
+$PAGE->set_title(get_string('modulename', 'mod_lecturevideos'));
+echo $OUTPUT->header();
+echo $OUTPUT->notification(get_string('gotonotfound', 'mod_lecturevideos'), \core\output\notification::NOTIFY_INFO);
+$back = get_local_referer(false);
+echo $OUTPUT->continue_button($back ? new moodle_url($back) : new moodle_url('/my/'));
+echo $OUTPUT->footer();

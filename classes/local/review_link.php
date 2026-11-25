@@ -41,6 +41,38 @@ class review_link {
     }
 
     /**
+     * Read the link's destinations from the request: cm/v/t, then cm2/v2/t2 and cm3/v3/t3
+     * (e.g. the same moment in another course's videos).
+     *
+     * @return array list of [idnumber, title, start]
+     */
+    public static function targets_from_request(): array {
+        $targets = [];
+        foreach (['', '2', '3'] as $n) {
+            $idnumber = optional_param('cm' . $n, '', PARAM_ALPHANUMEXT);
+            if ($idnumber !== '') {
+                $targets[] = [$idnumber, optional_param('v' . $n, '', PARAM_TEXT), optional_param('t' . $n, '', PARAM_RAW_TRIMMED)];
+            }
+        }
+        return $targets;
+    }
+
+    /**
+     * The first destination the current user can open.
+     *
+     * @param array $targets list of [idnumber, title, start], in order of preference
+     * @return moodle_url|null
+     */
+    public static function resolve_first(array $targets): ?moodle_url {
+        foreach ($targets as [$idnumber, $title, $start]) {
+            if ($url = self::resolve((string)$idnumber, (string)$title, (string)$start)) {
+                return $url;
+            }
+        }
+        return null;
+    }
+
+    /**
      * Find where a link should go for the current user.
      *
      * @param string $idnumber the activity's ID number, e.g. lv-ap-31
